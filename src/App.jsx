@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import ControlPanel from './lib/components/ControlPanel';
 import { urlParam } from './lib/hooks/useUrlParams';
 import { REFERENCE_PHOTO } from './config/assets';
+import { GAME_TITLE } from './config/lore';
 import { DEFAULT_MODE, MODES } from './config/modes';
 import GameHud from './scenes/game/GameHud';
 import GameLoadReporter from './scenes/game/GameLoadReporter';
@@ -73,6 +74,10 @@ export default function App() {
   const isLowPoly = mode === 'lowpoly';
   const gameMobile = useGameMobile();
   const mobileGame = isGame && gameMobile.active;
+
+  useEffect(() => {
+    document.title = GAME_TITLE;
+  }, []);
 
   useEffect(() => {
     if (isGame) beginGameLoad();
