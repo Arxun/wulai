@@ -1,0 +1,54 @@
+# 构建武来并发布到 https://arxun.github.io/wulai/
+#
+# 在 wulai 仓库 Settings → Secrets → Actions 添加：
+#   GH_PAGES_TOKEN — 对 Arxun/arxun.github.io 有 contents:write 的 PAT（classic 或 fine-grained）
+#
+# push main 或手动 workflow_dispatch 会触发；推送 arxun.github.io 的 main 后会自动跑 Pages 部署。
+name: Deploy to arxun.github.io/wulai
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout wulai
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: yarn
+
+      - name: Install and build
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Publish to arxun.github.io
+        env:
+          PAGES_TOKEN: ${{ secrets.GH_PAGES_TOKEN }}
+        run: |
+          if [ -z "$PAGES_TOKEN" ]; then
+            echo "::error::Missing secret GH_PAGES_TOKEN (PAT with write access to Arxun/arxun.github.io)"
+            exit 1
+          fi
+          touch dist/.nojekyll
+          git clone --depth=1 "https://x-access-token:${PAGES_TOKEN}@github.com/Arxun/arxun.github.io.git" pages
+          rm -rf pages/wulai
+          mkdir -p pages/wulai
+          cp -r dist/. pages/wulai/
+          cd pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add wulai
+          if git diff --staged --quiet; then
+            echo "No changes to deploy"
+            exit 0
+          fi
+          git commit -m "deploy wulai from ${GITHUB_REPOSITORY}@${GITHUB_SHA:0:7}"
+          git push
