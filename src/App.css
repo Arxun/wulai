@@ -1032,9 +1032,19 @@ html.mobile-touch-guard body {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+  background: #0a0c10;
 }
 
 .page.mobile-game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
   background: #0a0c10;
   -webkit-user-select: none;
   user-select: none;
@@ -1053,10 +1063,13 @@ html.mobile-touch-guard body {
 }
 
 .page.mobile-game .frame.mobile-frame {
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   max-width: none;
+  background: #0a0c10;
   touch-action: none;
 }
 
@@ -1064,21 +1077,16 @@ html.mobile-touch-guard body {
   overflow: hidden;
 }
 
-/** 竖屏：整页旋转为横屏视口（宽=物理高，高=物理宽） */
+/** 竖屏：旋转为宽屏视口，尺寸由 JS 按 visualViewport 对调，仅 rotate、不拉伸 */
 .mobile-force-landscape {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 100vh;
-  height: 100vw;
-  width: 100dvh;
-  height: 100dvw;
-  max-width: none;
-  max-height: none;
   transform: translate(-50%, -50%) rotate(90deg);
   transform-origin: center center;
   overflow: hidden;
   touch-action: none;
+  background: #0a0c10;
 }
 
 .mobile-force-landscape .mobile-game-frame {

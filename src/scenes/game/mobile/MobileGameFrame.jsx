@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
-const BASE = 0.9;
-const MIN = 0.72;
-const MAX = 1.28;
+const MIN = 0.85;
+const MAX = 1.2;
 
 /**
- * 移动端游戏视口：默认略缩小，双指捏合缩放。
+ * 移动端游戏视口：全屏铺满，双指捏合缩放（可选）。
  * 单指操作交给 Canvas（视角拖动）。
  */
 export default function MobileGameFrame({ children, enabled = true }) {
@@ -58,7 +57,7 @@ export default function MobileGameFrame({ children, enabled = true }) {
     };
   }, [enabled]);
 
-  const scale = enabled ? BASE * pinchZoom : 1;
+  const scale = enabled ? pinchZoom : 1;
 
   return (
     <div ref={root} className="mobile-game-frame">

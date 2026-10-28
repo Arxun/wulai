@@ -75,6 +75,7 @@ export default function App() {
   const isLowPoly = mode === 'lowpoly';
   const gameMobile = useGameMobile();
   const mobileGame = isGame && gameMobile.active;
+  const mobilePortrait = mobileGame && !gameMobile.landscape;
   useMobileInputGuard(mobileGame);
 
   useEffect(() => {
@@ -129,7 +130,7 @@ export default function App() {
   return (
     <div
       className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}${mobileGame ? ' mobile-game' : ''}${
-        mobileGame && !gameMobile.landscape ? ' mobile-portrait' : ''
+        mobilePortrait ? ' mobile-portrait' : ''
       }`}
     >
       {showRef && isLowPoly && (
@@ -141,7 +142,7 @@ export default function App() {
 
       <div className={`frame${isGame ? ' wide' : ''}${mobileGame ? ' mobile-frame' : ''}`}>
         {mobileGame ? (
-          <MobileForceLandscape rotate={!gameMobile.landscape}>
+          <MobileForceLandscape active={mobilePortrait}>
             <MobileGameFrame enabled>
               <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
               {isGame && <GameLoadingOverlay />}

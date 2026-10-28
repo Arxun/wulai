@@ -39,21 +39,5 @@ export function useGameMobile() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!state.active) return;
-    const ori = screen.orientation;
-    if (!ori?.lock) return;
-    ori.lock('landscape').catch(() => {});
-    return () => {
-      // unlock() 在部分浏览器返回 void，不能链式 .catch
-      try {
-        const r = ori.unlock?.();
-        if (r && typeof r.catch === 'function') r.catch(() => {});
-      } catch (_) {
-        /* ignore */
-      }
-    };
-  }, [state.active]);
-
   return state;
 }
