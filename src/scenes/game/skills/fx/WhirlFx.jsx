@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react';
+import { useSkillFxWarmupRoot } from '../../debug/useSkillFxWarmupRoot';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { moveProgress } from '../../../../lib/animation/combatMoves';
@@ -26,6 +27,7 @@ function addMat(color, opacity = 0) {
 
 export default function WhirlFx() {
   const root = useRef();
+  useSkillFxWarmupRoot(root);
   const ring = useRef();
   const ring2 = useRef();
   const disc = useRef();

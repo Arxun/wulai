@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import Arms from './Arms';
 import Gear from './Gear';
@@ -7,7 +7,8 @@ import Head from './Head';
 import Legs from './Legs';
 import Torso from './Torso';
 import { IDLE_RIG } from './rigs';
-import { vehicle } from '../../game/vehicles';
+import { guardFrame } from '../../game/debug/reportError';
+import { vehicle } from '../../game/vehicles/runtime';
 
 const PELVIS = [0, 0.72, 0];
 const NECK = [0, 1.44, 0];
@@ -16,34 +17,41 @@ export default function Person({ idle = true, poseRef, rig = IDLE_RIG, ghost = f
   const root = useRef();
   const upper = useRef();
   const head = useRef();
+  const ghostMat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: '#ffb24a',
+        transparent: true,
+        opacity: 0.32,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
 
-  useFrame(({ clock }) => {
-    if (vehicle.inCar) {
+  useLayoutEffect(() => {
+    if (!ghost || !root.current || root.current.userData.ghosted) return;
+    root.current.userData.ghosted = true;
+    root.current.traverse((o) => {
+      if (o.isLight) {
+        o.visible = false;
+        return;
+      }
+      if (!o.isMesh || !o.material) return;
+      o.castShadow = false;
+      o.receiveShadow = false;
+      o.material = ghostMat;
+    });
+  }, [ghost, ghostMat]);
+
+  useFrame(
+    guardFrame('lowpoly/Person', ({ clock }) => {
+    if (vehicle?.inCar) {
       if (root.current) root.current.visible = false;
       return;
     }
     if (root.current) root.current.visible = true;
-
-    if (ghost && root.current && !root.current.userData.ghosted) {
-      root.current.userData.ghosted = true;
-      root.current.traverse((o) => {
-        if (o.isLight) {
-          o.visible = false;
-          return;
-        }
-        if (!o.isMesh || !o.material) return;
-        o.castShadow = false;
-        o.receiveShadow = false;
-        o.material = new THREE.MeshBasicMaterial({
-          color: '#ffb24a',
-          transparent: true,
-          opacity: 0.32,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-          side: THREE.DoubleSide,
-        });
-      });
-    }
 
     const pose = poseRef?.current;
     if (pose) {
@@ -56,7 +64,8 @@ export default function Person({ idle = true, poseRef, rig = IDLE_RIG, ghost = f
     const t = clock.getElapsedTime();
     root.current.rotation.y = Math.sin(t * 0.55) * 0.02;
     root.current.position.y = Math.sin(t * 1.4) * 0.0015;
-  });
+    }),
+  );
 
   return (
     <group ref={root}>

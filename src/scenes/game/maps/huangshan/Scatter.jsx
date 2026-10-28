@@ -4,6 +4,7 @@ import FacetMesh from '../../../../lib/components/FacetMesh';
 import { makeGrassGeometry, makeRockGeometry } from '../../../../lib/geometry/organic';
 import { makeBroadleafGeometry, makeConiferGeometry, makeHuangshanPine } from '../../../../lib/geometry/trees';
 import { mulberry32 } from '../../../../lib/math/random';
+import { GAME_PERF } from '../../config/perf';
 import { HALF, SPAWN, nearestPath, slopeAt, spawnPadFactor, terrainHeight } from './heightfield';
 
 /**
@@ -68,7 +69,7 @@ function VariantBatch({ items, geometry, roughness, sink, scale, castShadow }) {
       ref={mesh}
       args={[geometry, undefined, items.length]}
       castShadow={castShadow}
-      receiveShadow
+      receiveShadow={false}
       frustumCulled={false}
     >
       <meshStandardMaterial flatShading vertexColors roughness={roughness} side={THREE.DoubleSide} />
@@ -148,7 +149,13 @@ export default function Scatter() {
 
   // 草丛：贴着地面，一簇簇长在缓坡上
   const grass = useMemo(() => {
-    const pts = scatter({ count: 1000, seed: 106, maxSlope: 0.4, minPath: 1.8, height: [-16, 32] });
+    const pts = scatter({
+      count: GAME_PERF.grassClusterCount,
+      seed: 106,
+      maxSlope: 0.4,
+      minPath: 1.8,
+      height: [-16, 32],
+    });
     return makeGrassGeometry(
       pts.map((p) => [p.x, p.y - 0.04, p.z]),
       { blades: 7, height: 0.5, seed: 9, palette: ['#7b8a4a', '#8e9455', '#6b7c3f', '#a2965c'] },
@@ -158,10 +165,10 @@ export default function Scatter() {
   return (
     <group>
       <Cluster items={items.conifer} variants={geo.conifer} roughness={0.85} sink={0.3} />
-      <Cluster items={items.pine} variants={geo.pine} roughness={0.85} sink={0.2} />
-      <Cluster items={items.broadleaf} variants={geo.broadleaf} roughness={0.88} sink={0.25} />
+      <Cluster items={items.pine} variants={geo.pine} roughness={0.85} sink={0.2} castShadow={false} />
+      <Cluster items={items.broadleaf} variants={geo.broadleaf} roughness={0.88} sink={0.25} castShadow={false} />
       <Cluster items={items.rock} variants={geo.rock} roughness={1} sink={0.3} scale={0.4} castShadow={false} />
-      <Cluster items={items.boulder} variants={geo.boulder} roughness={1} sink={0.4} scale={1.5} />
+      <Cluster items={items.boulder} variants={geo.boulder} roughness={1} sink={0.4} scale={1.5} castShadow={false} />
       <FacetMesh geometry={grass} roughness={0.95} castShadow={false} receiveShadow={false} side={2} />
     </group>
   );

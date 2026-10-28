@@ -1,6 +1,7 @@
-import { Environment, Lightformer } from '@react-three/drei';
-import { Suspense, useRef } from 'react';
+import { Suspense, memo, useRef } from 'react';
 import SkyDome from '../../lib/components/SkyDome';
+import { GAME_PERF } from './config/perf';
+import GameEnvironment from './GameEnvironment';
 import FloatTexts from './FloatTexts';
 import Loot from './Loot';
 import SkidMarks from './SkidMarks';
@@ -9,19 +10,21 @@ import { Player } from './hero';
 import { GameTerrain, Scatter, MAP_ENV } from './maps/huangshan';
 import { WulaiCrater } from './skills/fx';
 import { Monsters } from './monsters';
+import GameDiagnostics from './GameDiagnostics';
+import SkillFxWarmup from './SkillFxWarmup';
 import { Su7CarPlacement } from './vehicles';
 
-/**
- * 《武来》游戏场景：地图模块 + 主角 + 怪物 + 载具 + 技能特效等。
- */
-export default function GameScene() {
+function GameSceneInner() {
   const lightRef = useRef();
   const skidRef = useRef();
   const lineRef = useRef();
   const { sky, fog } = MAP_ENV;
+  const sm = GAME_PERF.shadowMapSize;
 
   return (
     <>
+      <GameDiagnostics />
+      <SkillFxWarmup />
       <SkyDome top={sky.top} horizon={sky.horizon} bottom={sky.bottom} radius={sky.radius} />
       <fog attach="fog" args={fog} />
 
@@ -31,7 +34,7 @@ export default function GameScene() {
         intensity={2.3}
         color="#fff4e4"
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[sm, sm]}
         shadow-camera-left={-14}
         shadow-camera-right={14}
         shadow-camera-top={14}
@@ -44,10 +47,7 @@ export default function GameScene() {
       <directionalLight position={[40, 20, -30]} intensity={0.35} color="#dce8f2" />
 
       <Suspense fallback={null}>
-        <Environment resolution={64} frames={1} environmentIntensity={0.5}>
-          <Lightformer form="rect" intensity={2} color="#f2f7fb" position={[0, 10, 4]} rotation-x={Math.PI / 2} scale={[20, 12, 1]} />
-          <Lightformer form="rect" intensity={0.7} color="#9a8c76" position={[0, -6, 0]} rotation-x={-Math.PI / 2} scale={[20, 20, 1]} />
-        </Environment>
+        <GameEnvironment />
       </Suspense>
 
       <GameTerrain />
@@ -65,3 +65,5 @@ export default function GameScene() {
     </>
   );
 }
+
+export default memo(GameSceneInner);

@@ -1,7 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { vehicle } from './vehicles';
+import { vehicle } from './vehicles/runtime';
 
 /** 氮气喷火：挂在玩家身后（+Z 前进，火往 -Z） */
 

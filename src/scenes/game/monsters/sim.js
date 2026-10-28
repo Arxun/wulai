@@ -14,6 +14,8 @@ import {
   world,
 } from '../stores/combatStore';
 import { HALF, terrainHeight } from '../maps/huangshan/heightfield';
+/** 只引 runtime，避免经 vehicles/index 拉起 Su7Car 与 DriverBust 的循环依赖 */
+import { vehicle } from '../vehicles/runtime';
 import { MONSTER_KINDS } from './kinds';
 import { pickSpot } from './pack';
 
@@ -111,10 +113,12 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
   m.cd = Math.max(0, m.cd - dt);
   m.hurt = Math.max(0, m.hurt - dtRaw * 2.4);
 
+  const playerTarget = !vehicle.inCar;
+
   if (!far) {
     const mv = moveOf(world.move || (world.heavy > 0 ? 'skill' : 'stab'));
     const bodyR = (spec.radius || 0.5) * spec.scale;
-    if (m.hitLock <= 0 && hitTest(world, m.x, m.z, bodyR)) {
+    if (playerTarget && m.hitLock <= 0 && hitTest(world, m.x, m.z, bodyR)) {
       const me = liveStats();
       const dmg = rollDamage(me.atk * mv.mult, spec.def);
       m.hp -= dmg;
@@ -138,7 +142,7 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
     }
     m.hitLock = Math.max(0, m.hitLock - dt);
     m.burnLock = Math.max(0, (m.burnLock || 0) - dt);
-    if (m.hp > 0 && m.burnLock <= 0 && craterHit(world, m.x, m.z, bodyR)) {
+    if (playerTarget && m.hp > 0 && m.burnLock <= 0 && craterHit(world, m.x, m.z, bodyR)) {
       const pit = MOVES.wulai;
       const me = liveStats();
       const dmg = rollDamage(me.atk * (pit.craterMult || 0.5), spec.def);
@@ -160,7 +164,7 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
 
   let tx = 0;
   let tz = 0;
-  if (dist < spec.aggro && !combat.dead) {
+  if (playerTarget && dist < spec.aggro && !combat.dead) {
     tx = px - m.x;
     tz = pz - m.z;
     if (dist < spec.range && m.cd <= 0) {

@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react';
+import { useSkillFxWarmupRoot } from '../../debug/useSkillFxWarmupRoot';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { MOVES } from '../../../../lib/animation/combatMoves';
@@ -94,6 +95,7 @@ function makeCrackStrip(len, width, segs, seed, taper = 0.72) {
 
 export default function WulaiCrater() {
   const root = useRef();
+  useSkillFxWarmupRoot(root);
   const bowl = useRef();
   const pool = useRef();
   const poolHot = useRef();

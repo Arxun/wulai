@@ -35,6 +35,7 @@ export default function FloatTexts() {
   const cache = useMemo(() => new Map(), []);
 
   useFrame((_, dtRaw) => {
+    if (floats.length === 0) return;
     const dt = Math.min(dtRaw, 0.05);
     for (let i = floats.length - 1; i >= 0; i--) {
       floats[i].age += dt;

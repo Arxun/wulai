@@ -17,7 +17,7 @@ import {
 } from './stores/combatStore';
 
 /**
- * 左上角：头像 + 血蓝 + 等级经验 + 攻防武器 + 药品。
+ * 人物信息：头像 + 血蓝 + 等级经验 + 攻防武器 + 药品（位于 MapHudHeader 下方）。
  * 100ms 读一次 combatStore，和右上角氮气面板同一套路。
  */
 

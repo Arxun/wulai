@@ -1,16 +1,20 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import ControlPanel from './lib/components/ControlPanel';
 import { urlParam } from './lib/hooks/useUrlParams';
 import { REFERENCE_PHOTO } from './config/assets';
 import { DEFAULT_MODE, MODES } from './config/modes';
 import GameHud from './scenes/game/GameHud';
+import GameLoadReporter from './scenes/game/GameLoadReporter';
+import GameLoadingOverlay from './scenes/game/GameLoadingOverlay';
 import GameScene from './scenes/game';
+import { beginGameLoad, resetGameLoad } from './scenes/game/stores/gameLoadingStore';
 import LowPolyScene from './scenes/lowpoly/LowPolyScene';
 // Legacy（入口已隐藏）：360° 模型、照片视差 → src/scenes/_legacy/
 // import FullModelScene from './scenes/_legacy/FullModelScene';
 // import PhotoParallaxScene from './scenes/_legacy/PhotoParallaxScene';
+import { GAME_PERF } from './scenes/game/config/perf';
 import './App.css';
 
 /** 渲染当前模式的场景（画布配置来自 MODES） */
@@ -21,10 +25,11 @@ function ModeCanvas({ mode, autoRotate, controlsRef }) {
     <Canvas
       key={mode}
       shadows={mode === 'lowpoly' || isGame}
-      dpr={isGame ? [1, 2] : [1, 2]}
+      dpr={isGame ? GAME_PERF.dpr : [1, 2]}
       camera={cfg.camera}
       gl={{ antialias: true, preserveDrawingBuffer: !isGame }}
     >
+      {isGame && <GameLoadReporter />}
       <Suspense fallback={null}>
         {mode === 'game' && <GameScene />}
         {/* Legacy
@@ -63,6 +68,11 @@ export default function App() {
   const cfg = MODES[mode];
   const isGame = mode === 'game';
   const isLowPoly = mode === 'lowpoly';
+
+  useEffect(() => {
+    if (isGame) beginGameLoad();
+    else resetGameLoad();
+  }, [isGame]);
 
   const panelItems = [
     {
@@ -125,8 +135,9 @@ export default function App() {
             draggable={false}
           />
         )}
-        <span className="tag">{cfg.tag}</span>
+        {!isGame && <span className="tag">{cfg.tag}</span>}
 
+        {isGame && <GameLoadingOverlay />}
         {isGame && <GameHud />}
 
         <ControlPanel items={panelItems} />

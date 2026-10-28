@@ -49,6 +49,7 @@ import {
   usePotion,
   world,
 } from '../stores/combatStore';
+import { guardFrame } from '../debug/reportError';
 import {
   CAR_SIT_POSE,
   START_IN_SU7,
@@ -300,12 +301,14 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     spin: new THREE.Quaternion(),
   }).current;
 
-  useFrame((state, dtRaw) => {
+  useFrame(
+    guardFrame('hero/Player', (state, dtRaw) => {
     if (fx.stop > 0) fx.stop = Math.max(0, fx.stop - dtRaw);
     const dt = Math.min(dtRaw, 0.05) * (fx.stop > 0 && !world.lock ? 0.14 : 1);
     updateCarProximity(s.pos.x, s.pos.z);
     tickMoves(world, dt);
 
+    if (vehicle == null) throw new Error('vehicle runtime 未就绪');
     const inCar = vehicle.inCar;
     if (inCar && fxWrap.current) fxWrap.current.visible = false;
     else if (fxWrap.current) fxWrap.current.visible = true;
@@ -734,7 +737,8 @@ export default function Player({ lightRef, skidRef, lineRef }) {
       light.target.position.copy(s.pos);
       light.target.updateMatrixWorld();
     }
-  });
+    }),
+  );
 
   return (
     <group ref={group}>

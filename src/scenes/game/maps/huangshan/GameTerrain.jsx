@@ -5,6 +5,7 @@ import { makeMountainRange } from '../../../../lib/geometry/terrain';
 import { applyFaceTint } from '../../../../lib/geometry/vertexColor';
 import { fbm2 } from '../../../../lib/math/noise';
 import { hash3 } from '../../../../lib/math/random';
+import { GAME_PERF } from '../../config/perf';
 import { HALF, MAP_SIZE, nearestPath, roadFactor, spawnPadFactor, terrainHeight } from './heightfield';
 
 /**
@@ -14,7 +15,7 @@ import { HALF, MAP_SIZE, nearestPath, roadFactor, spawnPadFactor, terrainHeight 
  *   平地长草、陡坡露岩、高处是裸岩和残雪、路面是压实的土。
  */
 
-const SEG = 200; // 260m / 200 = 1.3m 一格。格子不必跟地图等比涨，不然顶点数会按面积平方往上窜
+const SEG = GAME_PERF.terrainSegments;
 
 const COLORS = {
   grass: new THREE.Color('#5c7246'),

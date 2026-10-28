@@ -49,6 +49,7 @@ const SkidMarks = forwardRef(function SkidMarks(_, ref) {
     scale: new THREE.Vector3(),
     mat4: new THREE.Matrix4(),
     zero: new THREE.Matrix4().makeScale(0, 0, 0),
+    hasActive: false,
   }).current;
 
   const { geometry, material } = useMemo(() => {
@@ -80,6 +81,7 @@ const SkidMarks = forwardRef(function SkidMarks(_, ref) {
       s.base[i] = 0.62 + strength * 0.28;
       s.alpha.array[i] = s.base[i];
       s.alpha.needsUpdate = true;
+      s.hasActive = true;
     },
     clear() {
       const m = mesh.current;
@@ -89,6 +91,7 @@ const SkidMarks = forwardRef(function SkidMarks(_, ref) {
         m.setMatrixAt(i, s.zero);
       }
       m.instanceMatrix.needsUpdate = true;
+      s.hasActive = false;
     },
   }));
 
@@ -101,6 +104,7 @@ const SkidMarks = forwardRef(function SkidMarks(_, ref) {
   }, [s]);
 
   useFrame((_state, dt) => {
+    if (!s.hasActive) return;
     const m = mesh.current;
     if (!m) return;
     let dirty = false;
@@ -118,6 +122,7 @@ const SkidMarks = forwardRef(function SkidMarks(_, ref) {
       }
     }
     if (dirty) s.alpha.needsUpdate = true;
+    else s.hasActive = false;
   });
 
   return (

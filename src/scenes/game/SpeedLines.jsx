@@ -31,6 +31,7 @@ const SpeedLines = forwardRef(function SpeedLines(_, ref) {
     rot: new Float32Array(COUNT * 4),
     alpha: null,
     spawn: 0, // 没攒够一整条时的余量
+    hasActive: false,
     p: new THREE.Vector3(),
     q: new THREE.Quaternion(),
     sc: new THREE.Vector3(),
@@ -113,11 +114,13 @@ const SpeedLines = forwardRef(function SpeedLines(_, ref) {
         s.life[i] = s.max[i];
         s.len[i] = 2.2 + Math.random() * 2.8;
         s.thick[i] = 0.018 + Math.random() * 0.022;
+        s.hasActive = true;
       }
     },
   }));
 
   useFrame((_state, dtRaw) => {
+    if (!s.hasActive) return;
     const m = mesh.current;
     if (!m) return;
     // 和玩家那边一样截断 dt：线条只活 0.2~0.4 秒，一次掉帧就会让它们在首次更新时
@@ -148,6 +151,8 @@ const SpeedLines = forwardRef(function SpeedLines(_, ref) {
     if (dirty) {
       m.instanceMatrix.needsUpdate = true;
       s.alpha.needsUpdate = true;
+    } else {
+      s.hasActive = false;
     }
   });
 

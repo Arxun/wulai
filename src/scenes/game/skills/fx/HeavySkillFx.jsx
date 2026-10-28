@@ -1,4 +1,5 @@
 import { useMemo, useRef } from 'react';
+import { useSkillFxWarmupRoot } from '../../debug/useSkillFxWarmupRoot';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { HEAVY_RANGE, HEAVY_TIME, world } from '../../stores/combatStore';
@@ -26,6 +27,7 @@ function addMat(color, opacity) {
 
 export default function HeavySkillFx() {
   const root = useRef();
+  useSkillFxWarmupRoot(root);
   const glow = useRef();
   const blade = useRef();
   const pillar = useRef();

@@ -7,13 +7,24 @@ import { activeMap, DEFAULT_MAP_ID, getMapId, MAPS, setMapId } from '../maps/reg
 import { MONSTER_KINDS } from '../monsters/kinds';
 import { VEHICLE_DEFS, DEFAULT_VEHICLE_ID, activeVehicleSpeedMult, vehicle } from '../vehicles';
 import { SU7_VEHICLE } from '../vehicles/su7/def';
+import { guardFrame, logWulaiBootChecks } from '../debug/reportError';
+import { markSkillFxWarmupRoot } from '../debug/warmupShaders';
+import {
+  beginGameLoad,
+  getGameLoadingState,
+  resetGameLoad,
+  updateGameLoadAssets,
+} from '../stores/gameLoadingStore';
+import * as THREE from 'three';
 import { resetDrift, drift, NITRO_MAX } from '../stores/driftStore';
+import { combat, world } from '../stores/combatStore';
+import { vehicle as vehicleRuntime } from '../vehicles/runtime';
 
 describe('地图模块 maps/', () => {
   it('默认地图为黄山', () => {
     expect(getMapId()).toBe('huangshan');
     expect(DEFAULT_MAP_ID).toBe('huangshan');
-    expect(MAPS.huangshan.label).toBeTruthy();
+    expect(MAPS.huangshan.label).toBe('黄山步道');
   });
 
   it('activeMap 提供高度场与障碍 API', () => {
@@ -86,6 +97,12 @@ describe('主角 hero/', () => {
 });
 
 describe('怪物 monsters/', () => {
+  it('上车后 vehicle.inCar 为真（怪物 AI 不追打玩家）', () => {
+    vehicle.inCar = true;
+    expect(vehicle.inCar).toBe(true);
+    vehicle.inCar = false;
+  });
+
   it('至少三种怪且数值完整', () => {
     for (const id of ['pebble', 'fox', 'crow']) {
       const spec = MONSTER_KINDS[id];
@@ -134,5 +151,44 @@ describe('漂移 driftStore', () => {
     resetDrift();
     expect(drift.nitro).toBe(0);
     expect(drift.boost).toBe(0);
+  });
+});
+
+describe('诊断 debug/（自检）', () => {
+  it('vehicles/runtime 独立加载且 inCar 为布尔', () => {
+    expect(vehicleRuntime).toBeTruthy();
+    expect(typeof vehicleRuntime.inCar).toBe('boolean');
+    expect(typeof vehicleRuntime.vehicleId).toBe('string');
+  });
+
+  it('logWulaiBootChecks 在完整 store 下不抛错', () => {
+    expect(() => logWulaiBootChecks({ vehicle: vehicleRuntime, world, combat })).not.toThrow();
+  });
+
+  it('gameLoadingStore 进图与进度', () => {
+    resetGameLoad();
+    beginGameLoad();
+    expect(getGameLoadingState().show).toBe(true);
+    expect(getGameLoadingState().phase).toBe('loading');
+    updateGameLoadAssets({ active: false, progress: 100, loaded: 2, total: 2 });
+    expect(getGameLoadingState().progress).toBe(100);
+    resetGameLoad();
+    expect(getGameLoadingState().phase).toBe('hidden');
+  });
+
+  it('markSkillFxWarmupRoot 标记特效根节点', () => {
+    const g = new THREE.Group();
+    markSkillFxWarmupRoot(g);
+    expect(g.userData.wulaiSkillFxWarmup).toBe(true);
+  });
+
+  it('guardFrame 吞掉 useFrame 内异常', () => {
+    let calls = 0;
+    const wrapped = guardFrame('test', () => {
+      calls += 1;
+      throw new Error('自检用例');
+    });
+    expect(() => wrapped()).not.toThrow();
+    expect(calls).toBe(1);
   });
 });

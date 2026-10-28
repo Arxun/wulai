@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import CombatHud from './CombatHud';
+import MapHudHeader from './MapHudHeader';
 import { combat, fx } from './stores/combatStore';
 import { drift, BOOST_TIME, NITRO_COST, NITRO_MAX } from './stores/driftStore';
 import { WulaiTitle } from './skills/fx';
-import { vehicle } from './vehicles';
+import { vehicle } from './vehicles/runtime';
 
 /**
  * 右上角的漂移 / 氮气面板。
@@ -43,7 +44,10 @@ export default function GameHud() {
       <WulaiTitle />
       {v.inCar && <div className="hud-flash interact">按 F 下车</div>}
       {!v.inCar && v.nearCar && <div className="hud-flash interact">按 F 上车</div>}
-      <CombatHud />
+      <div className="hud-left">
+        <MapHudHeader />
+        <CombatHud />
+      </div>
       <div className={`speedlines${v.boost > 0 ? ' on' : ''}`} />
       <div className={`speedlines fine${v.boost > 0 ? ' on' : ''}`} />
 

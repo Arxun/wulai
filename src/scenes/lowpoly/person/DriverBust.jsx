@@ -1,5 +1,6 @@
 import { useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
+import { guardFrame } from '../../game/debug/reportError';
 import Arms from './Arms';
 import Head from './Head';
 import Torso from './Torso';
@@ -16,12 +17,14 @@ export default function DriverBust({ poseRef }) {
   const upper = useRef();
   const head = useRef();
 
-  useFrame(() => {
-    const pose = poseRef?.current;
-    if (!pose) return;
-    if (upper.current) upper.current.rotation.set(pose.lean, pose.twist, pose.roll);
-    if (head.current) head.current.rotation.set(pose.headPitch, pose.headYaw, 0);
-  });
+  useFrame(
+    guardFrame('lowpoly/DriverBust', () => {
+      const pose = poseRef?.current;
+      if (!pose) return;
+      if (upper.current) upper.current.rotation.set(pose.lean, pose.twist, pose.roll);
+      if (head.current) head.current.rotation.set(pose.headPitch, pose.headYaw, 0);
+    }),
+  );
 
   return (
     <group>
