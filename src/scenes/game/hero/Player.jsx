@@ -1,7 +1,16 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { RUN_SPEED, WALK_SPEED, ZERO_POSE, blendPose, gaitParams, gaitPose, jumpPose } from '../../../lib/animation/gait';
+import {
+  RUN_SPEED,
+  WALK_SPEED,
+  ZERO_POSE,
+  blendPose,
+  deathPose,
+  gaitParams,
+  gaitPose,
+  jumpPose,
+} from '../../../lib/animation/gait';
 import { moveAxis, useKeyboard } from '../../../lib/hooks/useKeyboard';
 import Person from '../../lowpoly/person/index';
 import { LOCO_RIG } from '../../lowpoly/person/rigs';
@@ -32,6 +41,7 @@ import {
   NITRO_MAX,
   drift,
   resetDrift,
+  tryActivateNitro,
 } from '../stores/driftStore';
 import {
   HEAVY_MP,
@@ -40,9 +50,11 @@ import {
   WULAI_MP,
   WEAPON_ORDER,
   combat,
+  DEATH_RESPAWN_SEC,
   equipWeapon,
   fx,
   healTo,
+  MP_REGEN_PER_SEC,
   resetCombat,
   statsAt,
   tryPickup,
@@ -55,6 +67,7 @@ import {
   START_IN_SU7,
   activeVehicleSpeedMult,
   enterSu7,
+  exitSu7,
   syncCarFromPlayer,
   toggleSu7Entry,
   updateCarProximity,
@@ -68,11 +81,11 @@ import {
  *  - WASD / 方向键按相机朝向移动，**长按就会越跑越快**（不需要加速键）；
  *  - 跑起来之后按住 Shift，点一下左右 → 漂移（方向锁住，只按 Shift 也能一直绕圈），
  *    留下鞋底摩擦印子，攒够距离得一瓶氮气；
- *  - Ctrl 放氮气：3 秒内速度 ×3，屁股后面喷火 + 速度线。放的时候不能叠加。
+ *  - Ctrl 放氮气：3 秒内速度 ×3，喷火 + 速度线（步行 / 开车 SU7 均可）。放的时候不能叠加。
  *  - 空格跳跃：点按小跳，长按最多 2 秒蓄力，松手跳；蓄满最高是身高的 5 倍。
  *    跑起来再跳会带着水平速度，所以跳得更远。
- *  - 连按 J：刺 → 劈 → 砍 → 旋；空中 J 下砸 ×1.5；E 回旋斩（可移动）；K 崩击；L 大招「武来」。
- *    Q 回血、W 回蓝。招式表在 lib/animation/combatMoves.js。数字 1–5 换已获得的武器。
+ *  - 连按 J：刺 → 劈 → 砍 → 旋；空中 J 下砸 ×1.5；E 回旋斩（可移动）；K 崩击；R 大招「武来」。
+ *    Q 回血；蓝量自动回复。招式表在 lib/animation/combatMoves.js。数字 1–5 换已获得的武器。
  *
  * 几个关键点：
  *  - 步态相位按**走过的距离**累加（见 lib/animation/gait.js），所以脚不会在地上打滑；
@@ -88,6 +101,9 @@ const { clamp, lerp, smoothstep } = THREE.MathUtils;
 
 /** 每隔这么远盖一个鞋印（印子本身比这个长，所以会连成一条） */
 const SKID_STEP = 0.26;
+/** 开车漂移：左右轮距一半、胎痕间距 */
+const CAR_SKID_STEP = 0.34;
+const CAR_TRACK_HALF = 0.92;
 /** 漂移时的打舵速度（弧度/秒）。它和下面的抓地力一起决定侧滑角：slip ≈ 打舵 / 抓地 */
 const DRIFT_TURN = 2.3;
 const DRIFT_GRIP = 2.8;
@@ -121,10 +137,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
   const keys = useKeyboard(
     (code) => {
       if (code === 'ControlLeft' || code === 'ControlRight') {
-        if (!vehicle.inCar && drift.nitro > 0 && drift.boost <= 0) {
-          drift.nitro -= 1;
-          drift.boost = BOOST_TIME;
-        }
+        if (!combat.dead) tryActivateNitro();
         return;
       }
       // 落地才开始蓄力；空中再按空格不打断当前这一跳
@@ -146,10 +159,6 @@ export default function Player({ lightRef, skidRef, lineRef }) {
         usePotion('hp');
         return;
       }
-      if (code === 'KeyW') {
-        usePotion('mp');
-        return;
-      }
       if (code === 'KeyE') {
         if (combat.mp < WHIRL_MP) {
           combat.toast = `蓝不够 · 回旋斩需要 ${WHIRL_MP}`;
@@ -168,7 +177,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
         if (trySkill(world)) combat.mp -= HEAVY_MP;
         return;
       }
-      if (code === 'KeyL') {
+      if (code === 'KeyR') {
         if (combat.mp < WULAI_MP) {
           combat.toast = `蓝不够 · ${ULT_SKILL_NAME}需要 ${WULAI_MP}`;
           combat.toastAge = 1.6;
@@ -222,6 +231,8 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     launch: 0,
     land: 0,
     respawn: 0,
+    deathFall: 0,
+    deathInit: false,
     skillFlashed: false,
     lunged: false,
     knock: new THREE.Vector3(),
@@ -299,6 +310,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     dir: new THREE.Vector3(),
     tilt: new THREE.Quaternion(),
     spin: new THREE.Quaternion(),
+    pitch: new THREE.Quaternion(),
   }).current;
 
   useFrame(
@@ -306,7 +318,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     if (fx.stop > 0) fx.stop = Math.max(0, fx.stop - dtRaw);
     const dt = Math.min(dtRaw, 0.05) * (fx.stop > 0 && !world.lock ? 0.14 : 1);
     updateCarProximity(s.pos.x, s.pos.z);
-    tickMoves(world, dt);
+    if (!combat.dead) tickMoves(world, dt);
 
     if (vehicle == null) throw new Error('vehicle runtime 未就绪');
     const inCar = vehicle.inCar;
@@ -322,7 +334,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
 
     // ---- 氮气倒计时（触发在上面的 onPress 里）----
     if (drift.boost > 0) drift.boost = Math.max(0, drift.boost - dt);
-    const boosting = !inCar && drift.boost > 0;
+    const boosting = drift.boost > 0;
     if (world.move === 'skill' && world.striking && !s.skillFlashed) {
       s.skillFlashed = true;
       fx.skill = 0.24;
@@ -350,10 +362,31 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     if (combat.toastAge > 0) combat.toastAge = Math.max(0, combat.toastAge - dt);
     if (!combat.dead) {
       const st = statsAt(combat.level);
-      combat.mp = Math.min(st.maxMp, combat.mp + dt * 3.2);
-    } else {
+      combat.mp = Math.min(st.maxMp, combat.mp + dt * MP_REGEN_PER_SEC);
+    }
+
+    if (combat.dead) {
+      if (!s.deathInit) {
+        s.deathInit = true;
+        s.deathFall = 0;
+        s.respawn = 0;
+        s.vel.set(0, 0, 0);
+        s.knock.set(0, 0, 0);
+        s.vy = 0;
+        s.air = false;
+        drift.boost = 0;
+        if (vehicle.inCar) exitSu7(s);
+        if (combat.deathStain) {
+          combat.deathStain.x = s.pos.x;
+          combat.deathStain.y = s.pos.y;
+          combat.deathStain.z = s.pos.z;
+        }
+      }
       s.respawn += dt;
-      if (s.respawn > 1.4) {
+      combat.deathAge = s.respawn;
+      s.deathFall = Math.min(1, s.deathFall + dt / 0.52);
+      s.pos.y = terrainHeight(s.pos.x, s.pos.z);
+      if (s.respawn >= DEATH_RESPAWN_SEC) {
         const ry = terrainHeight(START[0], START[1]);
         s.pos.set(START[0], ry, START[1]);
         s.vel.set(0, 0, 0);
@@ -362,11 +395,37 @@ export default function Player({ lightRef, skidRef, lineRef }) {
         s.air = false;
         s.charging = false;
         s.charge = 0;
-        healTo(0.55);
         s.respawn = 0;
+        s.deathFall = 0;
+        s.deathInit = false;
+        healTo(0.55);
       }
+    } else {
+      s.deathInit = false;
+      s.deathFall = 0;
     }
 
+    let speed = 0;
+
+    if (combat.dead) {
+      s.vel.set(0, 0, 0);
+      s.knock.set(0, 0, 0);
+      drift.speed = 0;
+      drift.sliding = false;
+      poseRef.current = deathPose(s.deathFall);
+      if (group.current) {
+        group.current.visible = true;
+        group.current.position.copy(s.pos);
+        group.current.scale.setScalar(1);
+        const n = terrainNormal(s.pos.x, s.pos.z, 0.95);
+        tmp.tilt.setFromUnitVectors(UP, n);
+        tmp.spin.setFromAxisAngle(UP, s.yaw);
+        tmp.right.set(Math.cos(s.yaw), 0, -Math.sin(s.yaw));
+        tmp.pitch.setFromAxisAngle(tmp.right, (Math.PI / 2) * s.deathFall);
+        const q = tmp.tilt.multiply(tmp.spin).multiply(tmp.pitch);
+        group.current.quaternion.slerp(q, 1 - Math.exp(-10 * dt));
+      }
+    } else {
     // ---- 目标速度：氮气 ×3 ----
     tmp.fwd.set(-Math.sin(s.camYaw), 0, -Math.cos(s.camYaw)).normalize();
     tmp.right.set(-tmp.fwd.z, 0, tmp.fwd.x);
@@ -469,7 +528,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     if (s.knock.lengthSq() < 0.04) s.knock.set(0, 0, 0);
     if (s.vel.lengthSq() < 1e-5) s.vel.set(0, 0, 0);
 
-    const speed = Math.hypot(s.vel.x, s.vel.z);
+    speed = Math.hypot(s.vel.x, s.vel.z);
     drift.speed = speed;
     s.pos.x += (s.vel.x + s.knock.x) * dt;
     s.pos.z += (s.vel.z + s.knock.z) * dt;
@@ -542,19 +601,19 @@ export default function Player({ lightRef, skidRef, lineRef }) {
       if (drift.nitro >= NITRO_MAX) drift.dist = Math.min(drift.dist, NITRO_COST);
       drift.progress = clamp(drift.dist / NITRO_COST, 0, 1);
 
-      // 左右脚各盖一道，摩擦强度看侧滑角
       s.skid += d;
       const strength = clamp((Math.abs(s.slip) - DRIFT_SLIP) / 0.9, 0, 1);
       const rx = Math.cos(s.yaw);
       const rz = -Math.sin(s.yaw);
-      while (s.skid >= SKID_STEP) {
-        s.skid -= SKID_STEP;
-        const half = 0.11;
-        for (const side of [-half, half]) {
+      const step = inCar ? CAR_SKID_STEP : SKID_STEP;
+      const trackHalf = inCar ? CAR_TRACK_HALF : 0.11;
+      while (s.skid >= step) {
+        s.skid -= step;
+        for (const side of [-trackHalf, trackHalf]) {
           tmp.mark.set(s.pos.x + rx * side, 0, s.pos.z + rz * side);
           tmp.mark.y = terrainHeight(tmp.mark.x, tmp.mark.z) + 0.035;
           tmp.normal.copy(terrainNormal(tmp.mark.x, tmp.mark.z, 0.7));
-          skidRef?.current?.emit(tmp.mark, velYaw, tmp.normal, strength);
+          skidRef?.current?.emit(tmp.mark, velYaw, tmp.normal, strength, { tire: inCar });
         }
       }
     } else {
@@ -628,9 +687,12 @@ export default function Player({ lightRef, skidRef, lineRef }) {
         else group.current.quaternion.slerp(q, 1 - Math.exp(-12 * dt));
       }
     }
+    } // !combat.dead 移动 / 姿态
+
+    const ground = terrainHeight(s.pos.x, s.pos.z);
 
     // ---- 冲刺速度线：沿移动方向撒细长条，相对玩家往后退 ----
-    if (boosting && speed > 1) {
+    if (!combat.dead && boosting && speed > 1) {
       tmp.dir.copy(s.vel).normalize();
       // 起停的 0.18 秒里线条数量跟着淡，不然喷口一灭画面还在刷线
       const env = clamp(drift.boost / 0.18, 0, 1);
@@ -682,7 +744,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
           (1 +
             0.12 * s.runMix +
             0.22 * boostK +
-            (inCar ? 0.08 * s.runMix : 0) +
+            (inCar ? 0.08 * s.runMix + 0.14 * boostK : 0) +
             0.035 * Math.max(0, s.pos.y - ground) +
             skillZoom),
       )

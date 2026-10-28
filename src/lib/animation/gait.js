@@ -256,5 +256,27 @@ export function jumpPose({ charge = 0, air = 0, vy = 0, land = 0, launch = 0 }) 
   return pose;
 }
 
+/** 死亡倒地：t 0→1，约半秒插到躺姿 */
+export function deathPose(t) {
+  const k = clamp(t, 0, 1);
+  const down = smoothstep(k, 0.08, 1);
+  return {
+    bodyY: lerp(0, -0.62, down),
+    lean: lerp(0, 1.48, down),
+    roll: lerp(0, 0.14, down),
+    twist: 0,
+    legs: [
+      { thigh: lerp(0, 0.35, down), knee: lerp(0, 1.05, down), ankle: 0.08 * down },
+      { thigh: lerp(0, -0.28, down), knee: lerp(0, 1.22, down), ankle: 0.04 * down },
+    ],
+    arms: [
+      { shoulder: lerp(0, -0.45, down), elbow: lerp(0, 0.95, down), yaw: 0, roll: 0 },
+      { shoulder: lerp(0, 0.62, down), elbow: lerp(0, 0.72, down), yaw: 0, roll: 0 },
+    ],
+    headYaw: 0.18 * down,
+    headPitch: 0.52 * down,
+  };
+}
+
 /** 空姿态（所有关节归零），用来初始化 ref */
 export const ZERO_POSE = restPose(0);

@@ -23,7 +23,7 @@ import {
   updateGameLoadAssets,
 } from '../stores/gameLoadingStore';
 import * as THREE from 'three';
-import { resetDrift, drift, NITRO_MAX } from '../stores/driftStore';
+import { resetDrift, drift, NITRO_MAX, tryActivateNitro, BOOST_TIME } from '../stores/driftStore';
 import { combat, world } from '../stores/combatStore';
 import { vehicle as vehicleRuntime } from '../vehicles/runtime';
 
@@ -56,13 +56,13 @@ describe('地图模块 maps/', () => {
 describe('载具模块 vehicles/', () => {
   it('SU7 在注册表且移速倍率正确', () => {
     expect(VEHICLE_DEFS.su7).toBe(SU7_VEHICLE);
-    expect(VEHICLE_DEFS[DEFAULT_VEHICLE_ID].speedMult).toBe(1.65);
+    expect(VEHICLE_DEFS[DEFAULT_VEHICLE_ID].speedMult).toBe(2);
   });
 
   it('activeVehicleSpeedMult 跟随 vehicleId', () => {
     const prev = vehicle.vehicleId;
     vehicle.vehicleId = 'su7';
-    expect(activeVehicleSpeedMult()).toBe(1.65);
+    expect(activeVehicleSpeedMult()).toBe(2);
     vehicle.vehicleId = prev;
   });
 
@@ -185,6 +185,15 @@ describe('漂移 driftStore', () => {
     resetDrift();
     expect(drift.nitro).toBe(0);
     expect(drift.boost).toBe(0);
+  });
+
+  it('tryActivateNitro 消耗一瓶并进入 BOOST', () => {
+    resetDrift();
+    drift.nitro = 1;
+    expect(tryActivateNitro()).toBe(true);
+    expect(drift.nitro).toBe(0);
+    expect(drift.boost).toBe(BOOST_TIME);
+    expect(tryActivateNitro()).toBe(false);
   });
 });
 

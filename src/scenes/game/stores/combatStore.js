@@ -10,6 +10,9 @@ import { MOVES, resetMoves } from '../../../lib/animation/combatMoves';
 
 export const LEVEL_MAX = 99;
 
+/** 死亡后多久回出生点（秒） */
+export const DEATH_RESPAWN_SEC = 3;
+
 /** 1 级的人物底板（不含武器）。用户指定：攻击 10、防御 5 */
 export const BASE = { hp: 120, mp: 40, atk: 10, def: 5 };
 
@@ -45,10 +48,13 @@ export const WEAPONS = {
 
 export const WEAPON_ORDER = ['wood', 'iron', 'frost', 'ember', 'storm', 'blood'];
 
-/** 消耗品：走近地上的瓶子捡起来，Q / W 喝 */
+/** 蓝量自动回复（点/秒，相对原 3.2/s 为 70%） */
+export const MP_REGEN_BASE = 3.2;
+export const MP_REGEN_PER_SEC = MP_REGEN_BASE * 0.7;
+
+/** 消耗品：走近地上的瓶子捡起来，Q 喝 */
 export const POTIONS = {
   hp: { id: 'hp', name: '回血丹', hp: 72, key: 'Q' },
-  mp: { id: 'mp', name: '回蓝丹', mp: 48, key: 'W' },
 };
 
 export const combat = {
@@ -58,12 +64,16 @@ export const combat = {
   mp: BASE.mp,
   weapon: 'wood',
   owned: { wood: true },
-  pots: { hp: 1, mp: 1 },
+  pots: { hp: 1 },
   toast: '',
   toastAge: 0,
   dead: false,
   /** 最近一次受伤的闪白，HUD 用 */
   hurt: 0,
+  /** 死亡倒地处的血迹 { x, y, z, age } */
+  deathStain: null,
+  /** 本次死亡已过去的时间（秒），HUD / 复活用 */
+  deathAge: 0,
 };
 
 /** 地上的掉落物。Loot.jsx 每帧读这份。 */
@@ -92,11 +102,13 @@ export function resetCombat() {
   combat.mp = BASE.mp;
   combat.weapon = 'wood';
   combat.owned = { wood: true };
-  combat.pots = { hp: 1, mp: 1 };
+  combat.pots = { hp: 1 };
   combat.toast = '';
   combat.toastAge = 0;
   combat.dead = false;
   combat.hurt = 0;
+  combat.deathStain = null;
+  combat.deathAge = 0;
   resetMoves(world);
   world.striking = false;
   fx.shake = 0;
@@ -157,8 +169,17 @@ export function takeHit(dmg) {
   }
   if (combat.hp <= 0) {
     combat.dead = true;
-    combat.toast = '倒下了……回出生点';
-    combat.toastAge = 2.4;
+    combat.deathAge = 0;
+    combat.deathStain = { x: world.x, y: world.y, z: world.z, age: 0 };
+    combat.toast = '';
+    combat.toastAge = 0;
+    resetMoves(world);
+    world.lock = false;
+    world.striking = false;
+    world.move = '';
+    world.swing = 0;
+    world.heavy = 0;
+    bang({ shake: 0.32, stop: 0.08 });
   }
 }
 
@@ -167,6 +188,8 @@ export function healTo(frac = 0.55) {
   combat.hp = Math.max(combat.hp, Math.round(s.maxHp * frac));
   combat.mp = Math.max(combat.mp, Math.round(s.maxMp * 0.4));
   combat.dead = false;
+  combat.deathAge = 0;
+  combat.deathStain = null;
 }
 
 export function grantWeapon(id) {
@@ -187,24 +210,15 @@ export function equipWeapon(id) {
 }
 
 export function usePotion(kind) {
-  if (combat.dead || (kind !== 'hp' && kind !== 'mp')) return false;
-  if ((combat.pots[kind] || 0) <= 0) return false;
+  if (combat.dead || kind !== 'hp') return false;
+  if ((combat.pots.hp || 0) <= 0) return false;
   const s = statsAt(combat.level);
-  if (kind === 'hp') {
-    if (combat.hp >= s.maxHp - 0.5) return false;
-    combat.pots.hp -= 1;
-    const add = Math.min(POTIONS.hp.hp, s.maxHp - combat.hp);
-    combat.hp += add;
-    spawnFloat(world.x, world.y + 1.7, world.z, `+${Math.round(add)}`, '#7dff9a', 1.05);
-    combat.toast = `喝下回血丹 +${Math.round(add)}`;
-  } else {
-    if (combat.mp >= s.maxMp - 0.5) return false;
-    combat.pots.mp -= 1;
-    const add = Math.min(POTIONS.mp.mp, s.maxMp - combat.mp);
-    combat.mp += add;
-    spawnFloat(world.x, world.y + 1.7, world.z, `+${Math.round(add)}`, '#7ecbff', 1.05);
-    combat.toast = `喝下回蓝丹 +${Math.round(add)}`;
-  }
+  if (combat.hp >= s.maxHp - 0.5) return false;
+  combat.pots.hp -= 1;
+  const add = Math.min(POTIONS.hp.hp, s.maxHp - combat.hp);
+  combat.hp += add;
+  spawnFloat(world.x, world.y + 1.7, world.z, `+${Math.round(add)}`, '#7dff9a', 1.05);
+  combat.toast = `喝下回血丹 +${Math.round(add)}`;
   combat.toastAge = 1.8;
   return true;
 }
@@ -235,9 +249,9 @@ export function tryPickup(x, z) {
     const it = loot[i];
     if (Math.hypot(it.x - x, it.z - z) > PICK_R) continue;
     loot.splice(i, 1);
-    if (it.id === 'hp' || it.id === 'mp') {
-      combat.pots[it.id] += 1;
-      const pot = POTIONS[it.id];
+    if (it.id === 'hp') {
+      combat.pots.hp += 1;
+      const pot = POTIONS.hp;
       combat.toast = `捡到${pot.name} · 按 ${pot.key} 使用`;
       combat.toastAge = 2.6;
     } else if (!grantWeapon(it.id)) {

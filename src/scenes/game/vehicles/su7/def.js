@@ -5,7 +5,7 @@ export const SU7_VEHICLE = {
   id: 'su7',
   label: 'SU7',
   /** 相对步行 RUN_SPEED 的倍率（再叠氮气 BOOST_MULT） */
-  speedMult: 1.65,
+  speedMult: 2,
   interactDist: 5,
   startInVehicle: false,
   spawn: SU7_SPAWN,

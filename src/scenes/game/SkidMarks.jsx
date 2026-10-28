@@ -62,7 +62,7 @@ const SkidMarks = forwardRef(function SkidMarks(_, ref) {
   }, [s]);
 
   useImperativeHandle(ref, () => ({
-    emit(pos, yaw, normal, strength = 1) {
+    emit(pos, yaw, normal, strength = 1, opts = {}) {
       const m = mesh.current;
       if (!m) return;
       const i = s.next;
@@ -74,7 +74,12 @@ const SkidMarks = forwardRef(function SkidMarks(_, ref) {
       s.spin.setFromAxisAngle(UP, yaw);
       s.quat.multiply(s.spin);
       // 印子沿滑动方向拉长，摩擦越狠越宽越长；长度大于盖印间距，所以会连成一条
-      s.scale.set(0.09 + strength * 0.07, 1, 0.5 + strength * 0.28);
+      const tire = opts.tire === true;
+      s.scale.set(
+        tire ? 0.11 + strength * 0.09 : 0.09 + strength * 0.07,
+        1,
+        tire ? 0.72 + strength * 0.38 : 0.5 + strength * 0.28,
+      );
       s.mat4.compose(pos, s.quat, s.scale);
       m.setMatrixAt(i, s.mat4);
       m.instanceMatrix.needsUpdate = true;

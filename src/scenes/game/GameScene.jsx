@@ -4,6 +4,7 @@ import { GAME_PERF } from './config/perf';
 import GameEnvironment from './GameEnvironment';
 import FloatTexts from './FloatTexts';
 import Loot from './Loot';
+import BloodStain from './fx/BloodStain';
 import SkidMarks from './SkidMarks';
 import SpeedLines from './SpeedLines';
 import { Player } from './hero';
@@ -61,6 +62,7 @@ function GameSceneInner() {
       <Loot />
       <FloatTexts />
       <SkidMarks ref={skidRef} />
+      <BloodStain />
       <SpeedLines ref={lineRef} />
     </>
   );

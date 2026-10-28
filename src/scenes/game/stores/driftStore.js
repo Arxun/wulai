@@ -43,6 +43,14 @@ export const drift = {
   air: false,
 };
 
+/** 消耗一瓶氮气并开始喷射；已在喷 / 没库存时返回 false */
+export function tryActivateNitro() {
+  if (drift.nitro <= 0 || drift.boost > 0) return false;
+  drift.nitro -= 1;
+  drift.boost = BOOST_TIME;
+  return true;
+}
+
 export function resetDrift() {
   drift.dist = 0;
   drift.combo = 0;

@@ -7,6 +7,8 @@ import DriverBust from '../../../lowpoly/person/DriverBust';
 import { SU7_DRIVER_LOCAL, SU7_MESH_YAW } from './driverSeat';
 import { replicaUpdateWheels } from './replicaCar';
 import { bindSu7WheelModel, listSu7WheelSpinNodes } from './wheels';
+import NitroFlame from '../../NitroFlame';
+import { drift } from '../../stores/driftStore';
 import { guardFrame } from '../../debug/reportError';
 import { terrainHeight } from '../../maps/huangshan/heightfield';
 import { vehicle } from '../runtime';
@@ -105,6 +107,8 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
           <DriverBust poseRef={vehicle.poseRef} />
         </group>
       </group>
+      {/* 与 carRoot 对齐：+Z 车头，车尾 -Z 喷火（勿挂在 MESH_YAW 子树里，局部轴会拧 90°） */}
+      <NitroFlame stateRef={drift} variant="car" />
     </group>
   );
 }

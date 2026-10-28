@@ -2,9 +2,6 @@ import { useEffect, useState } from 'react';
 import { COMBO, moveOf } from './skills';
 import { HERO_NAME } from '../../config/lore';
 import {
-  HEAVY_MULT,
-  WHIRL_MULT,
-  WULAI_MULT,
   LEVEL_MAX,
   POTIONS,
   WEAPON_ORDER,
@@ -76,10 +73,10 @@ export default function CombatHud() {
         </div>
         <div className="chud-atk">
           <em>J 刺/劈/砍/旋</em>
-          <em>空中J ×1.5</em>
-          <em>E ×{WHIRL_MULT}×10</em>
-          <em>K ×{HEAVY_MULT}</em>
-          <em>L ×{WULAI_MULT}</em>
+          <em>空中 J</em>
+          <em>E</em>
+          <em>K</em>
+          <em>R</em>
         </div>
         {world.move ? (
           <div className="chud-move">{moveOf(world.move).name}</div>
@@ -110,9 +107,6 @@ export default function CombatHud() {
         <div className="chud-pots">
           <b className={`hp${combat.pots.hp ? ' own' : ''}`} title={POTIONS.hp.name} onClick={() => usePotion('hp')}>
             Q {combat.pots.hp}
-          </b>
-          <b className={`mp${combat.pots.mp ? ' own' : ''}`} title={POTIONS.mp.name} onClick={() => usePotion('mp')}>
-            W {combat.pots.mp}
           </b>
         </div>
       </div>

@@ -336,6 +336,54 @@
   opacity: 1;
 }
 
+/* ---- 死亡文案 ---- */
+.death-quote {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 36px;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, rgba(12, 6, 8, 0.55) 0%, transparent 62%);
+}
+
+.death-quote p {
+  margin: 0;
+  max-width: 16em;
+  font-size: clamp(22px, 4.2vw, 38px);
+  font-weight: 700;
+  font-family: 'Songti SC', 'Noto Serif SC', 'STSong', serif;
+  letter-spacing: 0.14em;
+  line-height: 1.72;
+  text-align: center;
+  color: transparent;
+  background: linear-gradient(180deg, #fff8ec 0%, #ffd4a0 32%, #ff6b4a 68%, #8a1a12 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 3px 18px rgba(0, 0, 0, 0.55));
+  animation: death-quote-fade 3s ease forwards;
+}
+
+@keyframes death-quote-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  14% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  58% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(1.02);
+  }
+}
+
 /* ---- 大招开场标题：武来 ---- */
 .wulai-title {
   position: absolute;

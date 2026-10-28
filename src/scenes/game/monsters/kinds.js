@@ -16,7 +16,7 @@ export const MONSTER_KINDS = {
     hpY: 0.85,
     count: 36,
     zone: { height: [-14, 6], minPath: 3.2, maxSlope: 0.42 },
-    drop: { hp: 0.5, mp: 0.22 },
+    drop: { hp: 0.5 },
   },
   fox: {
     name: '雾狸',
@@ -34,7 +34,7 @@ export const MONSTER_KINDS = {
     hpY: 1.05,
     count: 28,
     zone: { height: [5, 16], minPath: 4, maxSlope: 0.46 },
-    drop: { iron: 0.22, hp: 0.42, mp: 0.3 },
+    drop: { iron: 0.22, hp: 0.42 },
   },
   crow: {
     name: '赤鸦',
@@ -52,7 +52,7 @@ export const MONSTER_KINDS = {
     hpY: 1.2,
     count: 22,
     zone: { height: [14, 26], minPath: 4.2, maxSlope: 0.55 },
-    drop: { frost: 0.16, hp: 0.3, mp: 0.45 },
+    drop: { frost: 0.16, hp: 0.3 },
   },
   golem: {
     name: '岩灵',
@@ -70,7 +70,7 @@ export const MONSTER_KINDS = {
     hpY: 1.75,
     count: 16,
     zone: { height: [22, 36], minPath: 4.5, maxSlope: 0.62 },
-    drop: { ember: 0.2, hp: 0.55, mp: 0.4 },
+    drop: { ember: 0.2, hp: 0.55 },
   },
   oni: {
     name: '山魈',
@@ -88,6 +88,6 @@ export const MONSTER_KINDS = {
     hpY: 2.05,
     count: 8,
     zone: { height: [30, 72], minPath: 5, maxSlope: 0.7, near: [-72, -66, 42] },
-    drop: { blood: 0.22, storm: 0.32, ember: 0.2, hp: 1, mp: 0.85 },
+    drop: { blood: 0.22, storm: 0.32, ember: 0.2, hp: 1 },
   },
 };

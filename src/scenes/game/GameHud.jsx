@@ -3,6 +3,7 @@ import CombatHud from './CombatHud';
 import MapHudHeader from './MapHudHeader';
 import { combat, fx } from './stores/combatStore';
 import { drift, BOOST_TIME, NITRO_COST, NITRO_MAX } from './stores/driftStore';
+import DeathQuote from './DeathQuote';
 import { WulaiTitle } from './skills/fx';
 import { vehicle } from './vehicles/runtime';
 
@@ -14,6 +15,9 @@ import { vehicle } from './vehicles/runtime';
  */
 
 const fmt = (n) => n.toFixed(1);
+/** 内部速度是 m/s，HUD 用 km/h 展示 */
+const MS_TO_KMH = 3.6;
+const fmtSpeedKmh = (mps) => fmt(mps * MS_TO_KMH);
 
 export default function GameHud() {
   const [v, setV] = useState({ ...drift, hurt: 0, skill: 0, nearCar: false, inCar: false });
@@ -42,6 +46,7 @@ export default function GameHud() {
       <div className={`hurtflash${v.hurt > 0 ? ' on' : ''}`} />
       <div className={`skillflash${v.skill > 0 ? ' on' : ''}`} />
       <WulaiTitle />
+      <DeathQuote />
       {v.inCar && <div className="hud-flash interact">按 F 下车</div>}
       {!v.inCar && v.nearCar && <div className="hud-flash interact">按 F 上车</div>}
       <div className="hud-left">
@@ -54,7 +59,7 @@ export default function GameHud() {
       <div className={`hud${v.boost > 0 ? ' boosting' : ''}`}>
         <div className="hud-row">
           <span className="hud-label">速度</span>
-          <span className="hud-value">{fmt(v.speed)} m/s</span>
+          <span className="hud-value">{fmtSpeedKmh(v.speed)} km/h</span>
         </div>
 
         <div className="hud-row">
