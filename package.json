@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview --host",
     "model:relief": "cd tools/image-to-3d && ./run.sh generate --backend relief --image ../../public/reference.jpg --mask ../../public/photo3d/person-mask.png --depth ../../public/photo3d/depth.png --out-dir ../../public/models --name person --preview-dir out",
     "model:triposr": "cd tools/image-to-3d && ./run.sh generate --backend triposr --image ../../public/reference.jpg --mask ../../public/photo3d/person-mask.png --out-dir ../../public/models --name person --resolution 256 --preview-dir out --debug-dir out"
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.0"
+    "vite": "^5.4.0",
+    "vitest": "^2.1.9"
   }
 }

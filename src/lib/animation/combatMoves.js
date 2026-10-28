@@ -586,6 +586,11 @@ export function tickMoves(world, dt) {
     world.comboGate = Math.max(0, world.comboGate - dt);
     if (world.comboGate <= 0) world.combo = 0;
   }
+
+  if (world.lock && world.swing <= 0 && world.heavy <= 0) {
+    world.lock = false;
+    if (world.move === 'wulai') world.move = '';
+  }
 }
 
 export function resetMoves(world) {

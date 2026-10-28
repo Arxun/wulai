@@ -2,31 +2,28 @@ import { Environment, Lightformer } from '@react-three/drei';
 import { Suspense, useRef } from 'react';
 import SkyDome from '../../lib/components/SkyDome';
 import FloatTexts from './FloatTexts';
-import GameTerrain from './GameTerrain';
 import Loot from './Loot';
-import Monsters from './Monsters';
-import Player from './Player';
-import Scatter from './Scatter';
 import SkidMarks from './SkidMarks';
 import SpeedLines from './SpeedLines';
-import Su7CarPlacement from './Su7CarPlacement';
-import WulaiCrater from './WulaiCrater';
+import { Player } from './hero';
+import { GameTerrain, Scatter, MAP_ENV } from './maps/huangshan';
+import { WulaiCrater } from './skills/fx';
+import { Monsters } from './monsters';
+import { Su7CarPlacement } from './vehicles';
 
 /**
- * 《武来》游戏模式：黄山步道地图 + 第三人称操控主角「小武」。
+ * 《武来》游戏场景：地图模块 + 主角 + 怪物 + 载具 + 技能特效等。
  */
-
-const HAZE = '#c8d6e0';
-
 export default function GameScene() {
   const lightRef = useRef();
   const skidRef = useRef();
   const lineRef = useRef();
+  const { sky, fog } = MAP_ENV;
 
   return (
     <>
-      <SkyDome top="#7ba4cc" horizon="#d4e0e8" bottom="#c2ccd4" radius={900} />
-      <fog attach="fog" args={[HAZE, 80, 560]} />
+      <SkyDome top={sky.top} horizon={sky.horizon} bottom={sky.bottom} radius={sky.radius} />
+      <fog attach="fog" args={fog} />
 
       <hemisphereLight args={['#e8f1f7', '#6b6552', 0.85]} />
       <directionalLight

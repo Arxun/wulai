@@ -5,15 +5,16 @@ import ControlPanel from './lib/components/ControlPanel';
 import { urlParam } from './lib/hooks/useUrlParams';
 import { REFERENCE_PHOTO } from './config/assets';
 import { DEFAULT_MODE, MODES } from './config/modes';
-import FullModelScene from './scenes/FullModelScene';
 import GameHud from './scenes/game/GameHud';
-import GameScene from './scenes/game/GameScene';
+import GameScene from './scenes/game';
 import LowPolyScene from './scenes/lowpoly/LowPolyScene';
-import PhotoParallaxScene from './scenes/PhotoParallaxScene';
+// Legacy（入口已隐藏）：360° 模型、照片视差 → src/scenes/_legacy/
+// import FullModelScene from './scenes/_legacy/FullModelScene';
+// import PhotoParallaxScene from './scenes/_legacy/PhotoParallaxScene';
 import './App.css';
 
-/** 渲染当前模式的场景（画布配置全部来自 MODES） */
-function ModeCanvas({ mode, strength, autoRotate, usePhoto, controlsRef }) {
+/** 渲染当前模式的场景（画布配置来自 MODES） */
+function ModeCanvas({ mode, autoRotate, controlsRef }) {
   const cfg = MODES[mode];
   const isGame = mode === 'game';
   return (
@@ -25,9 +26,11 @@ function ModeCanvas({ mode, strength, autoRotate, usePhoto, controlsRef }) {
       gl={{ antialias: true, preserveDrawingBuffer: !isGame }}
     >
       <Suspense fallback={null}>
+        {mode === 'game' && <GameScene />}
+        {/* Legacy
         {mode === 'full' && <FullModelScene autoRotate={autoRotate} usePhoto={usePhoto} controlsRef={controlsRef} />}
         {mode === 'parallax' && <PhotoParallaxScene strength={strength} auto={autoRotate} />}
-        {mode === 'game' && <GameScene />}
+        */}
       </Suspense>
       {mode === 'lowpoly' && (
         <>
@@ -51,16 +54,15 @@ function ModeCanvas({ mode, strength, autoRotate, usePhoto, controlsRef }) {
 
 export default function App() {
   const controlsRef = useRef();
-  const [mode, setMode] = useState(MODES[urlParam.string('mode')] ? urlParam.string('mode') : DEFAULT_MODE);
+  const initialMode = MODES[urlParam.string('mode')] ? urlParam.string('mode') : DEFAULT_MODE;
+  const [mode, setMode] = useState(initialMode);
   const [showRef, setShowRef] = useState(urlParam.bool('ref', true));
-  const [autoRotate, setAutoRotate] = useState(urlParam.bool('auto', mode !== 'full'));
+  const [autoRotate, setAutoRotate] = useState(urlParam.bool('auto', mode === 'lowpoly'));
   const [overlay, setOverlay] = useState(urlParam.number('overlay', 0));
-  const [strength, setStrength] = useState(urlParam.number('strength', 1));
-  const [usePhoto, setUsePhoto] = useState(urlParam.bool('photo', true));
 
   const cfg = MODES[mode];
   const isGame = mode === 'game';
-  const orbitMode = mode === 'full' || mode === 'lowpoly';
+  const isLowPoly = mode === 'lowpoly';
 
   const panelItems = [
     {
@@ -72,41 +74,39 @@ export default function App() {
         onClick: () => setMode(key),
       })),
     },
-    { type: 'slider', label: '叠加参考图', min: 0, max: 1, step: 0.05, value: overlay, onChange: setOverlay, hidden: isGame },
     {
       type: 'slider',
-      label: '立体强度',
+      label: '叠加参考图',
       min: 0,
-      max: 2,
+      max: 1,
       step: 0.05,
-      value: strength,
-      onChange: setStrength,
-      hidden: mode !== 'parallax',
+      value: overlay,
+      onChange: setOverlay,
+      hidden: !isLowPoly,
     },
     {
       type: 'button',
-      label: usePhoto ? '照片投影：开' : '照片投影：关',
-      onClick: () => setUsePhoto((v) => !v),
-      hidden: mode !== 'full',
+      label: showRef ? '隐藏对照图' : '显示对照图',
+      onClick: () => setShowRef((v) => !v),
+      hidden: !isLowPoly,
     },
-    { type: 'button', label: showRef ? '隐藏对照图' : '显示对照图', onClick: () => setShowRef((v) => !v), hidden: isGame },
     {
       type: 'button',
-      label: autoRotate ? (orbitMode ? '停止旋转' : '停止摇镜') : orbitMode ? '自动旋转' : '自动摇镜',
+      label: autoRotate ? '停止旋转' : '自动旋转',
       onClick: () => setAutoRotate((v) => !v),
-      hidden: isGame,
+      hidden: !isLowPoly,
     },
     {
       type: 'button',
       label: '重置视角',
       onClick: () => controlsRef.current?.reset(),
-      hidden: !orbitMode,
+      hidden: !isLowPoly,
     },
   ];
 
   return (
     <div className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}`}>
-      {showRef && !isGame && (
+      {showRef && isLowPoly && (
         <div className="frame ref">
           <img src={REFERENCE_PHOTO.url} alt="参考照片" />
           <span className="tag">参考照片</span>
@@ -114,15 +114,9 @@ export default function App() {
       )}
 
       <div className={`frame${isGame ? ' wide' : ''}`}>
-        <ModeCanvas
-          mode={mode}
-          strength={strength}
-          autoRotate={autoRotate}
-          usePhoto={usePhoto}
-          controlsRef={controlsRef}
-        />
+        <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
 
-        {!isGame && (
+        {isLowPoly && (
           <img
             className="overlay"
             src={REFERENCE_PHOTO.url}

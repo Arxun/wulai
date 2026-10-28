@@ -7,7 +7,7 @@ import Head from './Head';
 import Legs from './Legs';
 import Torso from './Torso';
 import { IDLE_RIG } from './rigs';
-import { vehicle } from '../../game/vehicleStore';
+import { vehicle } from '../../game/vehicles';
 
 const PELVIS = [0, 0.72, 0];
 const NECK = [0, 1.44, 0];

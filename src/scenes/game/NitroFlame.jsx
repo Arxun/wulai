@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { vehicle } from './vehicles';
 
 /** 氮气喷火：挂在玩家身后（+Z 前进，火往 -Z） */
 
@@ -54,7 +55,7 @@ export default function NitroFlame({ stateRef }) {
   useFrame((state, dt) => {
     const drift = stateRef?.current ?? stateRef;
     const boost = drift?.boost ?? 0;
-    const on = boost > 0;
+    const on = boost > 0 && !vehicle.inCar;
     if (root.current) root.current.visible = on;
     if (!on) return;
 

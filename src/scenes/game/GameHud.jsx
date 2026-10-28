@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import CombatHud from './CombatHud';
-import WulaiTitle from './WulaiTitle';
-import { combat, fx } from './combatStore';
-import { vehicle } from './vehicleStore';
-import { BOOST_TIME, NITRO_COST, NITRO_MAX, drift } from './driftStore';
+import { combat, fx } from './stores/combatStore';
+import { drift, BOOST_TIME, NITRO_COST, NITRO_MAX } from './stores/driftStore';
+import { WulaiTitle } from './skills/fx';
+import { vehicle } from './vehicles';
 
 /**
  * 右上角的漂移 / 氮气面板。

@@ -4,8 +4,8 @@ import * as THREE from 'three';
 import FacetMesh from '../../lib/components/FacetMesh';
 import { makeBlobGeometry } from '../../lib/geometry/organic';
 import { makeLoftGeometry } from '../../lib/geometry/loft';
-import { equipWeapon, grantWeapon, loot, spawnLoot } from './combatStore';
-import { SPAWN, terrainHeight } from './heightfield';
+import { equipWeapon, grantWeapon, loot, spawnLoot } from './stores/combatStore';
+import { SPAWN, terrainHeight } from './maps/huangshan/heightfield';
 
 /**
  * 地上的掉落物：武器缩小立着，药是红/蓝小瓶。

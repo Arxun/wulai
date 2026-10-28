@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { COMBO, moveOf } from '../../lib/animation/combatMoves';
+import { COMBO, moveOf } from './skills';
 import { HERO_NAME } from '../../config/lore';
 import {
   HEAVY_MULT,
@@ -14,7 +14,7 @@ import {
   liveStats,
   usePotion,
   world,
-} from './combatStore';
+} from './stores/combatStore';
 
 /**
  * 左上角：头像 + 血蓝 + 等级经验 + 攻防武器 + 药品。

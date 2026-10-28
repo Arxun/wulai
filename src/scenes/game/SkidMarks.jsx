@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { applyInstanceAlpha, instanceAlphaAttribute } from '../../lib/materials/instanceAlpha';
-import { SKID_LIFE } from './driftStore';
+import { SKID_LIFE } from './stores/driftStore';
 
 /**
  * 鞋底摩擦印子。

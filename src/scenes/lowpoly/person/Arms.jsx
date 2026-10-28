@@ -7,9 +7,9 @@ import { makeLoftGeometry } from '../../../lib/geometry/loft';
 import { pivotGeometry, sub3 } from '../../../lib/geometry/pivot';
 import { fabricTextures, skinTextures } from '../../../lib/textures/procedural';
 import Hand from './Hand';
-import HeldWeapon from '../../game/weapons';
-import { WEAPON_DEFS } from '../../game/weaponDefs';
-import { combat, world } from '../../game/combatStore';
+import HeldWeapon from '../../game/equipment/weapons';
+import { WEAPON_DEFS } from '../../game/equipment/weaponDefs';
+import { combat, world } from '../../game/stores/combatStore';
 import { C } from './palette';
 import { IDLE_RIG } from './rigs';
 
