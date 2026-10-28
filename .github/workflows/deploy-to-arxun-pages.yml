@@ -26,6 +26,7 @@ jobs:
 
       - name: Install and build
         run: |
+          echo "registry=https://registry.npmmirror.com/" > .npmrc
           yarn install --frozen-lockfile
           yarn build
 
