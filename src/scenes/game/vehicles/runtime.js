@@ -42,7 +42,9 @@ export const vehicle = {
   sink: spawn.sink,
   scale: spawn.scale,
   driveSpeed: 0,
-  /** Su7Car 初始化后填入，供 Player 在 sync 之后 tick 轮子 */
+  /** Su7Car：`bindSu7WheelModel` 后的 Wheel 组（replica wheelModel） */
+  wheelHub: null,
+  /** 当前可见、会转的 hub.children（调试 __pl.wheelN） */
   wheelSpinners: [],
 };
 

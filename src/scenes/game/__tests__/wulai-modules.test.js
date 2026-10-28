@@ -8,9 +8,11 @@ import { MONSTER_KINDS } from '../monsters/kinds';
 import { VEHICLE_DEFS, DEFAULT_VEHICLE_ID, activeVehicleSpeedMult, vehicle } from '../vehicles';
 import { SU7_VEHICLE } from '../vehicles/su7/def';
 import {
+  bindSu7WheelModel,
+  getSu7WheelHub,
   setupSu7WheelSpinners,
   SU7_WHEEL_HALF_TRACK,
-  tickSu7WheelSpin,
+  updateSu7Wheels,
 } from '../vehicles/su7/wheels';
 import { guardFrame, logWulaiBootChecks } from '../debug/reportError';
 import { markSkillFxWarmupRoot } from '../debug/warmupShaders';
@@ -64,7 +66,7 @@ describe('载具模块 vehicles/', () => {
     vehicle.vehicleId = prev;
   });
 
-  it('setupSu7WheelSpinners 由 2 模板生成 4 个可见轮', () => {
+  it('bindSu7WheelModel + updateSu7Wheels 对齐 replica Car 轮子逻辑', () => {
     const root = new THREE.Group();
     const hub = new THREE.Group();
     hub.name = 'Wheel';
@@ -76,16 +78,18 @@ describe('载具模块 vehicles/', () => {
     b.name = 'Wheel.002';
     b.position.set(-1.5, 0.36, 0);
     hub.add(a, b);
+    const wheelModel = bindSu7WheelModel(root);
+    expect(wheelModel).toBe(getSu7WheelHub(root));
     const spinners = setupSu7WheelSpinners(root);
-    expect(spinners).toHaveLength(4);
-    expect(a.visible).toBe(false);
-    expect(b.visible).toBe(false);
+    expect(spinners).toHaveLength(2);
+    expect(a.visible).toBe(true);
+    expect(b.visible).toBe(true);
     for (const w of spinners) {
       expect(w.visible).toBe(true);
-      expect(Math.abs(w.position.z)).toBe(SU7_WHEEL_HALF_TRACK);
+      expect(w.position.z).toBe(0);
     }
     const rz0 = spinners[0].rotation.z;
-    tickSu7WheelSpin(spinners, 5, 0.05);
+    updateSu7Wheels(wheelModel, 5, 1 / 60);
     expect(spinners[0].rotation.z).not.toBe(rz0);
   });
 

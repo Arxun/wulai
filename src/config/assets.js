@@ -1,15 +1,18 @@
 import { fovToFitPlane } from '../lib/camera';
 import { urlParam } from '../lib/hooks/useUrlParams';
+import { publicUrl } from '../lib/publicUrl';
 
 /**
  * 素材路径集中配置。
  * - 武来 / 低多边形：常用
  * - 照片视差 / 360° 模型：已下线，保留路径便于恢复 legacy 场景
+ *
+ * public/ 下文件须经 publicUrl，以兼容 vite.config `base: '/wulai/'`。
  */
 
 /** 参考照片（低多边形对照、叠加层） */
 export const REFERENCE_PHOTO = {
-  url: '/reference.jpg',
+  url: publicUrl('/reference.jpg'),
   width: 576,
   height: 1024,
   aspect: 1024 / 576,
@@ -17,8 +20,8 @@ export const REFERENCE_PHOTO = {
 
 /** 武来 · SU7 glTF */
 export const SU7_CAR = {
-  gltf: '/models/su7/sm_car.gltf',
-  bodyAo: '/models/su7/t_car_body_AO.raw.jpg',
+  gltf: publicUrl('/models/su7/sm_car.gltf'),
+  bodyAo: publicUrl('/models/su7/t_car_body_AO.raw.jpg'),
 };
 
 /** 低多边形模式取景：竖构图 9:16 */
@@ -39,14 +42,14 @@ export const PHOTO_PARALLAX = {
   get fov() {
     return fovToFitPlane(this.aspect, this.camDistance);
   },
-  color: '/photo3d/color.jpg',
-  depth: '/photo3d/depth.png',
-  bgColor: '/photo3d/bg-color.jpg',
-  bgDepth: '/photo3d/bg-depth.png',
+  color: publicUrl('/photo3d/color.jpg'),
+  depth: publicUrl('/photo3d/depth.png'),
+  bgColor: publicUrl('/photo3d/bg-color.jpg'),
+  bgDepth: publicUrl('/photo3d/bg-depth.png'),
 };
 
 /** @deprecated 入口已隐藏 */
 export const FULL_MODEL = {
-  glb: '/models/person.glb',
-  meta: '/models/person.json',
+  glb: publicUrl('/models/person.glb'),
+  meta: publicUrl('/models/person.json'),
 };

@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import PhotoProjectedModel from '../../lib/components/PhotoProjectedModel';
 import useJson from '../../lib/hooks/useJson';
 import { FULL_MODEL } from '../../config/assets';
+import { publicUrl } from '../../lib/publicUrl';
 
 /** 模型高度（世界单位）；相机和控制器都按这个高度布置 */
 export const MODEL_HEIGHT = 1.8;
@@ -27,7 +28,7 @@ export default function FullModelScene({ autoRotate = false, usePhoto = true, co
       <Suspense fallback={null}>
         <PhotoProjectedModel
           glbUrl={FULL_MODEL.glb}
-          photoUrl={meta.photo}
+          photoUrl={publicUrl(meta.photo)}
           projMatrix={meta.projMatrix}
           frontDir={meta.frontDir}
           usePhoto={usePhoto}

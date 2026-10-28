@@ -5,7 +5,8 @@ import * as THREE from 'three';
 import { SU7_CAR } from '../../../../config/assets';
 import DriverBust from '../../../lowpoly/person/DriverBust';
 import { SU7_DRIVER_LOCAL, SU7_MESH_YAW } from './driverSeat';
-import { setupSu7WheelSpinners } from './wheels';
+import { replicaUpdateWheels } from './replicaCar';
+import { bindSu7WheelModel, listSu7WheelSpinNodes } from './wheels';
 import { guardFrame } from '../../debug/reportError';
 import { terrainHeight } from '../../maps/huangshan/heightfield';
 import { vehicle } from '../runtime';
@@ -15,7 +16,8 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
   const aoMap = useTexture(SU7_CAR.bodyAo);
   const carRoot = useRef();
   const bustWrap = useRef();
-  const wheelParts = useRef([]);
+  /** replica `Car.wheelModel` */
+  const wheelModel = useRef(null);
   const lastPose = useRef({ x: NaN, z: NaN, yaw: NaN, sink: NaN, scale: NaN });
 
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
@@ -49,12 +51,14 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
   }, [scene, aoMap, bodyColor]);
 
   useLayoutEffect(() => {
-    const spinners = setupSu7WheelSpinners(scene);
-    wheelParts.current = spinners;
-    vehicle.wheelSpinners = spinners;
+    const hub = bindSu7WheelModel(scene);
+    wheelModel.current = hub;
+    vehicle.wheelHub = hub;
+    vehicle.wheelSpinners = listSu7WheelSpinNodes(hub);
     return () => {
+      vehicle.wheelHub = null;
       vehicle.wheelSpinners = [];
-      wheelParts.current = [];
+      wheelModel.current = null;
     };
   }, [scene]);
 
@@ -86,6 +90,11 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
       }
     }
     if (bustWrap.current) bustWrap.current.visible = vehicle.inCar;
+
+    // replica Car.update（Player 已先更新 driveSpeed）
+    if (vehicle.inCar && wheelModel.current) {
+      replicaUpdateWheels(wheelModel.current, vehicle.driveSpeed, dt);
+    }
   }, 1));
 
   return (

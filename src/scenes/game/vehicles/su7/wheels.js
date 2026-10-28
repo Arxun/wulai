@@ -1,37 +1,36 @@
-import * as THREE from 'three';
-
 /**
- * glTF 里只有 Wheel.001 / .002（沿 ±X 各一只，Z≈0），按 ±Z 镜像成四轮。
- * 车头为 glTF +X；SU7_MESH_YAW 在 Su7Car 外层再转。
+ * SU7 轮子：旋转逻辑见 replicaCar.js；此处为武来绑定（ShaChe、可选四轮镜像）。
  */
+export {
+  REPLICA_WHEEL_SPIN,
+  replicaBindWheelModel,
+  replicaUpdateWheels,
+} from './replicaCar';
+
+import { replicaBindWheelModel, replicaUpdateWheels } from './replicaCar';
+
+/** @deprecated 与 REPLICA_WHEEL_SPIN 相同，测试/旧引用保留 */
+export const SU7_WHEEL_SPIN_K = 0.03;
+
 export const SU7_WHEEL_HALF_TRACK = 0.82;
-/** 与 su7-replica Car.update 一致：角速度 ≈ speed * K */
-export const SU7_WHEEL_SPIN_K = 0.032;
+export const SU7_MIRROR_WHEELS = false;
 
-const WHEEL_NAME = /^Wheel\.\d+$/;
-const SETUP_KEY = 'su7WheelSpinners';
+const TEMPLATE_NAME = /^Wheel\.\d+$/;
+const WHEEL_CHILD = /^Wheel\./;
+const SETUP_KEY = 'su7WheelMirrored';
 
-/**
- * @param {THREE.Object3D} scene 克隆后的 sm_car 根
- * @returns {THREE.Object3D[]} 参与滚动的轮子根（4 个）
- */
-export function setupSu7WheelSpinners(scene) {
-  if (scene.userData[SETUP_KEY]) return scene.userData[SETUP_KEY];
+export const getSu7WheelHub = replicaBindWheelModel;
 
-  const spinners = [];
-  const hub = scene.getObjectByName('Wheel');
-  const parent = hub ?? scene;
+function pinFixedBrakes(scene) {
+  const shache = scene.getObjectByName('ShaChe');
+  if (!shache) return;
+  const root = scene.getObjectByName('Sketchfab_model.001') ?? scene;
+  root.attach(shache);
+}
 
-  /** @type {THREE.Object3D[]} */
-  const templates = [];
-  parent.traverse((obj) => {
-    if (WHEEL_NAME.test(obj.name)) templates.push(obj);
-  });
-  if (!templates.length) {
-    scene.userData[SETUP_KEY] = spinners;
-    return spinners;
-  }
-
+function ensureMirroredWheelChildren(hub) {
+  if (!SU7_MIRROR_WHEELS || !hub || hub.userData[SETUP_KEY]) return;
+  const templates = hub.children.filter((c) => TEMPLATE_NAME.test(c.name));
   for (const tpl of templates) {
     const { x, y, z } = tpl.position;
     for (const sign of [-1, 1]) {
@@ -40,21 +39,29 @@ export function setupSu7WheelSpinners(scene) {
       clone.name = `${tpl.name}_${side}`;
       clone.visible = true;
       clone.position.set(x, y, z + sign * SU7_WHEEL_HALF_TRACK);
-      parent.add(clone);
-      spinners.push(clone);
+      hub.add(clone);
     }
     tpl.visible = false;
   }
-
-  scene.userData[SETUP_KEY] = spinners;
-  return spinners;
+  hub.userData[SETUP_KEY] = true;
 }
 
-/** 每帧在 Player 更新 driveSpeed 之后调用 */
-export function tickSu7WheelSpin(spinners, speed, dt) {
-  if (!spinners?.length || speed <= 0.001) return;
-  const step = -speed * SU7_WHEEL_SPIN_K * Math.min(dt, 0.05);
-  for (let i = 0; i < spinners.length; i++) {
-    spinners[i].rotateZ(step);
-  }
+/** 绑定 wheelModel（replica handleModel + 武来预处理） */
+export function bindSu7WheelModel(scene) {
+  pinFixedBrakes(scene);
+  const hub = replicaBindWheelModel(scene);
+  if (hub) ensureMirroredWheelChildren(hub);
+  return hub;
+}
+
+export function listSu7WheelSpinNodes(wheelModel) {
+  if (!wheelModel) return [];
+  return wheelModel.children.filter((c) => c.visible && WHEEL_CHILD.test(c.name));
+}
+
+/** 测试用别名 */
+export const updateSu7Wheels = replicaUpdateWheels;
+
+export function setupSu7WheelSpinners(scene) {
+  return listSu7WheelSpinNodes(bindSu7WheelModel(scene));
 }

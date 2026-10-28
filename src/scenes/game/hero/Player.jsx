@@ -50,7 +50,6 @@ import {
   world,
 } from '../stores/combatStore';
 import { guardFrame } from '../debug/reportError';
-import { tickSu7WheelSpin } from '../vehicles/su7/wheels';
 import {
   CAR_SIT_POSE,
   START_IN_SU7,
@@ -501,7 +500,6 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     if (inCar) {
       s.pos.y = ground;
       syncCarFromPlayer(s);
-      tickSu7WheelSpin(vehicle.wheelSpinners, vehicle.driveSpeed, dt);
     } else if (s.air) {
       s.vy -= JUMP_GRAVITY * dt;
       s.pos.y += s.vy * dt;
@@ -710,7 +708,24 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     // 开发期的观察窗口：转向符号 / 侧滑角这些东西从截图上看不出来，
     // 只能靠无头浏览器读这几个数（见 tools 下的 probe_turn 脚本）
     if (import.meta.env.DEV) {
-      window.__pl = { yaw: s.yaw, slip: s.slip, x: s.pos.x, y: s.pos.y, z: s.pos.z, vx: s.vel.x, vy: s.vy, vz: s.vel.z, air: s.air, charge: s.charge };
+      window.__pl = {
+        yaw: s.yaw,
+        slip: s.slip,
+        x: s.pos.x,
+        y: s.pos.y,
+        z: s.pos.z,
+        vx: s.vel.x,
+        vy: s.vy,
+        vz: s.vel.z,
+        air: s.air,
+        charge: s.charge,
+        inCar: vehicle.inCar,
+        driveSpeed: vehicle.driveSpeed,
+        wheelN: vehicle.wheelSpinners?.length ?? 0,
+        wheelHub: !!vehicle.wheelHub,
+        wheelRotZ: vehicle.wheelSpinners?.[0]?.rotation?.z ?? 0,
+      };
+      window.__vehicle = vehicle;
       window.__drift = drift;
       window.__combat = combat;
       window.__world = world;
