@@ -12,7 +12,11 @@ import { useEffect, useRef } from 'react';
  *   所以放氮气、点按跳跃这种一次性操作要走回调，不要在 useFrame 里自己判边沿。
  */
 
-import { mobileKeys, subscribeMobilePress } from '../../scenes/game/mobile/mobileInputStore';
+import {
+  mobileKeys,
+  subscribeMobilePress,
+  subscribeMobileRelease,
+} from '../../scenes/game/mobile/mobileInputStore';
 
 const BLOCK = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
 
@@ -40,11 +44,15 @@ export function useKeyboard(onPress, onRelease) {
     const unsubMobile = subscribeMobilePress((code) => {
       cb.current?.(code);
     });
+    const unsubMobileUp = subscribeMobileRelease((code) => {
+      cbUp.current?.(code);
+    });
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
       unsubMobile();
+      unsubMobileUp();
     };
   }, []);
   return keys;

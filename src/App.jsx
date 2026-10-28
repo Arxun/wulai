@@ -17,6 +17,7 @@ import LowPolyScene from './scenes/lowpoly/LowPolyScene';
 // import PhotoParallaxScene from './scenes/_legacy/PhotoParallaxScene';
 import { GAME_PERF } from './scenes/game/config/perf';
 import { useGameMobile } from './lib/hooks/useGameMobile';
+import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
 import MobileGameFrame from './scenes/game/mobile/MobileGameFrame';
 import MobileForceLandscape from './scenes/game/mobile/MobileForceLandscape';
 import './App.css';
@@ -74,6 +75,7 @@ export default function App() {
   const isLowPoly = mode === 'lowpoly';
   const gameMobile = useGameMobile();
   const mobileGame = isGame && gameMobile.active;
+  useMobileInputGuard(mobileGame);
 
   useEffect(() => {
     document.title = GAME_TITLE;

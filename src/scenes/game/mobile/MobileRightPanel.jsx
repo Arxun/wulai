@@ -3,9 +3,9 @@ import { moveOf } from '../skills';
 import { combat } from '../stores/combatStore';
 import { drift, NITRO_MAX } from '../stores/driftStore';
 import { vehicle } from '../vehicles/runtime';
-import { emitMobilePress, setMobileKey } from './mobileInputStore';
+import { emitMobilePress, emitMobileRelease, setMobileKey } from './mobileInputStore';
 
-/** 绕普攻键 90° 弧：从下往上 崩 → 回 → 武 → 血 */
+/** 绕普攻键 90° 弧：从下往上 崩 → 回 → 武 → 血（跳在弧外、崩左侧） */
 const ARC_SLOTS = [
   { code: 'KeyK', moveId: 'skill' },
   { code: 'KeyE', moveId: 'whirl', whirl: true },
@@ -15,28 +15,42 @@ const ARC_SLOTS = [
 
 const DRIFT_CODE = 'ShiftRight';
 
-/** 普攻圆心为锚点，角度从 190°（偏下）到 100°（偏上），共 90° */
+/** 普攻圆心为锚点，角度从 190°（偏下）到 100°（偏上） */
 const ARC_DEG_START = 190;
 const ARC_DEG_END = 100;
-const ORBIT_R = 78;
-const CLUSTER = 172;
-const ATTACK_SZ = 76;
+const ORBIT_R = 86;
+const ATTACK_SZ = 92;
 const ORBIT_BTN = 50;
+const JUMP_GAP = 30;
+/** 左侧多留出跳键宽度 + 间距，普攻仍贴 cluster 右下 */
+const CLUSTER = 200 + ORBIT_BTN + JUMP_GAP;
 
 function skillInitial(moveId) {
   const name = moveOf(moveId).name;
   return name ? name[0] : '?';
 }
 
+function orbitCenter() {
+  return { cx: CLUSTER - ATTACK_SZ / 2, cy: CLUSTER - ATTACK_SZ / 2 };
+}
+
 function orbitPos(index, total) {
   const t = total <= 1 ? 0 : index / (total - 1);
   const deg = ARC_DEG_START + (ARC_DEG_END - ARC_DEG_START) * t;
   const rad = (deg * Math.PI) / 180;
-  const cx = CLUSTER - ATTACK_SZ / 2;
-  const cy = CLUSTER - ATTACK_SZ / 2;
+  const { cx, cy } = orbitCenter();
   return {
     left: cx + ORBIT_R * Math.cos(rad) - ORBIT_BTN / 2,
     top: cy - ORBIT_R * Math.sin(rad) - ORBIT_BTN / 2,
+  };
+}
+
+/** 与弧上「崩」(index 0) 同高，左缘相距 JUMP_GAP */
+function jumpBesideBengPos() {
+  const beng = orbitPos(0, ARC_SLOTS.length);
+  return {
+    left: beng.left - JUMP_GAP - ORBIT_BTN,
+    top: beng.top,
   };
 }
 
@@ -115,6 +129,30 @@ export default function MobileRightPanel() {
     emitMobilePress('ControlLeft');
   };
 
+  const bindJump = {
+    onPointerDown: (e) => {
+      e.preventDefault();
+      if (snap.dead || snap.inCar) return;
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      setMobileKey('Space', true);
+      emitMobilePress('Space');
+    },
+    onPointerUp: (e) => {
+      setMobileKey('Space', false);
+      emitMobileRelease('Space');
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+    },
+    onPointerCancel: () => {
+      setMobileKey('Space', false);
+      emitMobileRelease('Space');
+    },
+    onPointerLeave: (e) => {
+      if (!e.currentTarget.hasPointerCapture?.(e.pointerId)) return;
+      setMobileKey('Space', false);
+      emitMobileRelease('Space');
+    },
+  };
+
   const bindDrift = {
     onPointerDown: (e) => {
       e.preventDefault();
@@ -183,6 +221,16 @@ export default function MobileRightPanel() {
         </button>
       )}
       <div className="mobile-combat-cluster" aria-label="普攻与技能">
+        <button
+          type="button"
+          className="mobile-skills__btn mobile-jump-btn"
+          style={jumpBesideBengPos()}
+          aria-label="跳跃"
+          disabled={snap.dead}
+          {...bindJump}
+        >
+          跳
+        </button>
         {ARC_SLOTS.map((slot, i) => {
           const pos = orbitPos(i, ARC_SLOTS.length);
           if (slot.kind === 'pot') {

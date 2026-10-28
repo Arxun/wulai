@@ -1027,8 +1027,29 @@
 }
 
 /* ---- 移动端游戏：横屏 + 视口缩放 + 武器栏 ---- */
+html.mobile-touch-guard,
+html.mobile-touch-guard body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .page.mobile-game {
   background: #0a0c10;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.page.mobile-game,
+.page.mobile-game * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.page.mobile-game img,
+.page.mobile-game canvas {
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 .page.mobile-game .frame.mobile-frame {
@@ -1172,69 +1193,76 @@
 }
 
 .mobile-dpad {
-  --dpad-btn: 54px;
-  --dpad-gap: 45px;
+  --dpad-size: 158px;
   position: absolute;
   left: 22px;
   bottom: 22px;
   z-index: 14;
-  width: calc(var(--dpad-btn) * 2 + var(--dpad-gap));
-  height: calc(var(--dpad-btn) * 2 + var(--dpad-gap));
+  width: var(--dpad-size);
+  height: var(--dpad-size);
   pointer-events: none;
 }
 
 .mobile-dpad__ring {
   position: absolute;
-  inset: calc(var(--dpad-btn) * 0.5 - var(--dpad-gap) * 0.5);
+  inset: 0;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(12, 16, 22, 0.35);
   pointer-events: none;
 }
 
-.mobile-dpad__btn {
+.mobile-dpad__disc {
   position: absolute;
-  width: var(--dpad-btn);
-  height: var(--dpad-btn);
+  inset: 0;
+  margin: 0;
   padding: 0;
+  border: none;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  background: rgba(12, 16, 22, 0.72);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  color: #eef4f8;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1;
+  background: transparent;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   pointer-events: auto;
+  cursor: pointer;
 }
 
-.mobile-dpad__btn--up {
-  top: 0;
-  left: calc(50% - var(--dpad-btn) / 2);
+.mobile-dpad__disc:active {
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.mobile-dpad__btn--down {
-  bottom: 0;
-  left: calc(50% - var(--dpad-btn) / 2);
+.mobile-dpad__hint {
+  position: absolute;
+  color: rgba(238, 244, 248, 0.88);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
 }
 
-.mobile-dpad__btn--left {
-  left: 0;
-  top: calc(50% - var(--dpad-btn) / 2);
+.mobile-dpad__hint--up {
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-.mobile-dpad__btn--right {
-  right: 0;
-  top: calc(50% - var(--dpad-btn) / 2);
+.mobile-dpad__hint--down {
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-.mobile-dpad__btn:active {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 209, 102, 0.65);
-  box-shadow: 0 0 14px rgba(255, 209, 102, 0.35);
+.mobile-dpad__hint--left {
+  left: 10%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.mobile-dpad__hint--right {
+  right: 10%;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .mobile-right {
@@ -1250,9 +1278,9 @@
 }
 
 .mobile-combat-cluster {
-  --m-attack: 76px;
+  --m-attack: 92px;
   --m-orbit-btn: 50px;
-  --m-cluster: 172px;
+  --m-cluster: 280px;
   position: absolute;
   right: 18px;
   bottom: 18px;
@@ -1291,13 +1319,22 @@
 }
 
 .mobile-attack-btn__svg {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: block;
   margin: 0 auto;
 }
 
 .mobile-skills__btn--orbit {
+  position: absolute;
+  z-index: 1;
+  width: var(--m-orbit-btn);
+  height: var(--m-orbit-btn);
+  font-size: 17px;
+  pointer-events: auto;
+}
+
+.mobile-jump-btn {
   position: absolute;
   z-index: 1;
   width: var(--m-orbit-btn);
@@ -1461,13 +1498,12 @@
   }
 
   .mobile-dpad {
-    --dpad-btn: 48px;
-    --dpad-gap: 36px;
+    --dpad-size: 142px;
     left: 16px;
     bottom: 16px;
   }
 
-  .mobile-dpad__btn {
+  .mobile-dpad__hint {
     font-size: 19px;
   }
 
@@ -1478,16 +1514,16 @@
   }
 
   .mobile-combat-cluster {
-    --m-attack: 68px;
+    --m-attack: 84px;
     --m-orbit-btn: 46px;
-    --m-cluster: 158px;
+    --m-cluster: 260px;
     right: 14px;
     bottom: 14px;
   }
 
   .mobile-attack-btn__svg {
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
   }
 
   .mobile-right--drive {

@@ -452,6 +452,11 @@ export default function Player({ lightRef, skidRef, lineRef }) {
 
     const prevSpeed = Math.hypot(s.vel.x, s.vel.z);
 
+    // 车内：前进 + 打方向时自动进漂移，省得同时按「漂」和十字键
+    if (inCar && iy > 0 && ix !== 0 && prevSpeed > DRIFT_MIN_SPEED * 0.82) {
+      driftKey = true;
+    }
+
     // ---- 跳跃：按下 / 松开走键盘回调（点按不会被帧间隔吃掉），这里只负责蓄力和起跳。
     if (!inCar && s.charging && !s.air && !s.wantJump) {
       s.charge = clamp(s.charge + dt / JUMP_CHARGE_TIME, 0, 1);

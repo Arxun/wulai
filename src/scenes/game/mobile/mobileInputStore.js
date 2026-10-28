@@ -21,3 +21,15 @@ export function subscribeMobilePress(fn) {
   pressSubs.add(fn);
   return () => pressSubs.delete(fn);
 }
+
+const releaseSubs = new Set();
+
+/** 虚拟键松开（跳跃蓄力等），与 keyup 的 onRelease 同路径 */
+export function emitMobileRelease(code) {
+  for (const fn of releaseSubs) fn(code);
+}
+
+export function subscribeMobileRelease(fn) {
+  releaseSubs.add(fn);
+  return () => releaseSubs.delete(fn);
+}
