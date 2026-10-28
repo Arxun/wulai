@@ -26,6 +26,12 @@ const FAR_SIM = 78;
 const _axis = new THREE.Vector3(0, 1, 0);
 const _look = new THREE.Quaternion();
 
+function bossRespawnDelay(spec) {
+  const rs = spec.respawnSec;
+  if (rs && rs.length >= 2) return rs[0] + Math.random() * (rs[1] - rs[0]);
+  return 16 + Math.random() * 14;
+}
+
 export function paintBody(root, { gray, opacity }) {
   if (!root) return;
   root.traverse((o) => {
@@ -77,13 +83,22 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
     }
     if (bar) bar.visible = false;
     if (m.respawn <= 0) {
-      const rnd = mulberry32((m.id + 1) * 9973 + Math.floor(performance.now()) % 99991);
-      const p = pickSpot(rnd, spec.zone);
-      m.x = p.x;
-      m.z = p.z;
-      m.y = p.y;
-      m.homeX = p.x;
-      m.homeZ = p.z;
+      const anchor = spec.boss && spec.zone?.anchor;
+      if (anchor) {
+        m.x = anchor[0];
+        m.z = anchor[1];
+        m.y = terrainHeight(m.x, m.z);
+        m.homeX = anchor[0];
+        m.homeZ = anchor[1];
+      } else {
+        const rnd = mulberry32((m.id + 1) * 9973 + Math.floor(performance.now()) % 99991);
+        const p = pickSpot(rnd, spec.zone);
+        m.x = p.x;
+        m.z = p.z;
+        m.y = p.y;
+        m.homeX = p.x;
+        m.homeZ = p.z;
+      }
       m.hp = spec.hp;
       m.dead = false;
       m.fade = 0;
@@ -133,7 +148,7 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
       if (m.hp <= 0) {
         m.dead = true;
         m.fade = DEATH_FADE;
-        m.respawn = 16 + Math.random() * 14;
+        m.respawn = bossRespawnDelay(spec);
         paintBody(body, { gray: true, opacity: 1 });
         gainXp(spec.xp);
         rollDrops(spec.drop, m.x, m.z);
@@ -153,7 +168,7 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
       if (m.hp <= 0) {
         m.dead = true;
         m.fade = DEATH_FADE;
-        m.respawn = 16 + Math.random() * 14;
+        m.respawn = bossRespawnDelay(spec);
         paintBody(body, { gray: true, opacity: 1 });
         gainXp(spec.xp);
         rollDrops(spec.drop, m.x, m.z);
@@ -185,7 +200,8 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
     tx = m.wx;
     tz = m.wz;
     const [lo, hi] = spec.zone.height;
-    if (m.y < lo + 0.4 || m.y > hi - 0.4 || Math.hypot(m.x - m.homeX, m.z - m.homeZ) > 14) {
+    const leash = spec.leash ?? 14;
+    if (m.y < lo + 0.4 || m.y > hi - 0.4 || Math.hypot(m.x - m.homeX, m.z - m.homeZ) > leash) {
       tx = m.homeX - m.x;
       tz = m.homeZ - m.z;
     }
@@ -219,9 +235,11 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
     if (showBar && camera) bar.lookAt(camera.position);
   }
   if (showBar && fill) {
+    const barW = spec.boss ? 1.55 : 0.7;
     const t = Math.max(0, m.hp / spec.hp);
     fill.scale.x = Math.max(0.001, t);
-    fill.position.x = -(0.7 * (1 - t)) / 2;
-    fill.material.color.set(t > 0.35 ? '#e0543a' : '#ffcc44');
+    fill.position.x = -(barW * (1 - t)) / 2;
+    if (spec.boss) fill.material.color.set(t > 0.35 ? '#ff5030' : '#ffcc44');
+    else fill.material.color.set(t > 0.35 ? '#e0543a' : '#ffcc44');
   }
 }

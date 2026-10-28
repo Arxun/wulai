@@ -17,6 +17,7 @@ const MonsterVisual = memo(function MonsterVisual({ state, geo, register, unregi
   const bar = useRef();
   const fill = useRef();
   const spec = MONSTER_KINDS[state.kind];
+  const barW = spec.boss ? 1.55 : 0.7;
 
   useLayoutEffect(() => {
     register(state.id, { group, body, bar, fill });
@@ -28,14 +29,14 @@ const MonsterVisual = memo(function MonsterVisual({ state, geo, register, unregi
       <group ref={body}>
         <MonsterMesh kind={state.kind} geo={geo} />
       </group>
-      <group ref={bar} position={[0, spec.hpY, 0]}>
+      <group ref={bar} position={[0, spec.hpY + (spec.boss ? 0.22 : 0), 0]}>
         <mesh>
-          <planeGeometry args={[0.7, 0.07]} />
-          <meshBasicMaterial color="#1a1010" depthTest={false} />
+          <planeGeometry args={[barW, spec.boss ? 0.1 : 0.07]} />
+          <meshBasicMaterial color={spec.boss ? '#0a0814' : '#1a1010'} depthTest={false} />
         </mesh>
         <mesh ref={fill} position={[0, 0, 0.002]}>
-          <planeGeometry args={[0.7, 0.05]} />
-          <meshBasicMaterial color="#e0543a" depthTest={false} />
+          <planeGeometry args={[barW, spec.boss ? 0.075 : 0.05]} />
+          <meshBasicMaterial color={spec.boss ? '#ff5030' : '#e0543a'} depthTest={false} />
         </mesh>
       </group>
     </group>

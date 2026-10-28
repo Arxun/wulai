@@ -126,6 +126,123 @@ export function makeMonsterGeo() {
         { samples: 5, segments: 6 },
       ),
     },
+    titan: {
+      core: makeBlobGeometry({ radius: 0.55, detail: 2, scale: [1.15, 1.35, 0.82], jitter: 0.11, color: '#3a4048', seed: 551 }),
+      plate: makeBlobGeometry({ radius: 0.38, detail: 1, scale: [1.35, 0.55, 1.05], jitter: 0.12, color: '#5a626e', seed: 552 }),
+      pauldron: makeBlobGeometry({ radius: 0.32, detail: 1, scale: [1.4, 0.75, 1.1], jitter: 0.14, color: '#6e7682', seed: 553 }),
+      skirt: makeBlobGeometry({ radius: 0.42, detail: 1, scale: [1.25, 0.45, 1.15], jitter: 0.13, color: '#2a3038', seed: 554 }),
+      head: makeBlobGeometry({ radius: 0.28, detail: 1, scale: [1.05, 1.08, 0.88], jitter: 0.1, color: '#4a5058', seed: 555 }),
+      visor: makeBlobGeometry({ radius: 0.2, detail: 0, scale: [1.2, 0.55, 0.45], jitter: 0.06, color: '#121820', seed: 556 }),
+      eye: makeBlobGeometry({ radius: 0.055, detail: 0, scale: [1.4, 0.65, 0.5], jitter: 0.04, color: '#ffd040', seed: 557 }),
+      horn: loft(
+        [
+          { p: [-0.14, 0.06, 0.02], a: 0.065 },
+          { p: [-0.22, 0.38, -0.02], a: 0.038 },
+          { p: [-0.16, 0.72, -0.08], a: 0.012 },
+        ],
+        '#c8b070',
+        558,
+        { samples: 6, segments: 6 },
+      ),
+      wing: loft(
+        [
+          { p: [0.08, 0.42, 0.02], a: 0.12, b: 0.22 },
+          { p: [0.52, 0.78, -0.08], a: 0.06, b: 0.42 },
+          { p: [0.92, 0.52, -0.18], a: 0.018, b: 0.12 },
+        ],
+        '#2a3440',
+        559,
+      ),
+      arm: loft(
+        [
+          { p: [0.48, 0.88, 0], a: 0.16 },
+          { p: [0.72, 0.48, 0.1], a: 0.14 },
+          { p: [0.82, 0.08, 0.14], a: 0.18 },
+        ],
+        '#525a64',
+        560,
+      ),
+      fist: makeBlobGeometry({ radius: 0.2, detail: 1, scale: [1.2, 0.9, 1.05], jitter: 0.12, color: '#6a727c', seed: 561 }),
+      leg: loft(
+        [
+          { p: [0.22, 0.38, 0], a: 0.16 },
+          { p: [0.24, 0.14, 0.03], a: 0.14 },
+          { p: [0.22, 0.01, 0.04], a: 0.17 },
+        ],
+        '#3a424a',
+        562,
+        { samples: 6, segments: 7 },
+      ),
+      spike: makeBlobGeometry({ radius: 0.08, detail: 0, scale: [0.5, 1.8, 0.45], jitter: 0.06, color: '#9098a4', seed: 563 }),
+    },
+    wyrm: {
+      belly: makeBlobGeometry({ radius: 0.52, detail: 2, scale: [0.88, 0.72, 1.55], jitter: 0.1, color: '#6a2818', seed: 571 }),
+      spine: makeBlobGeometry({ radius: 0.18, detail: 0, scale: [0.55, 1.6, 0.55], jitter: 0.08, color: '#3a1410', seed: 572 }),
+      neck: loft(
+        [
+          { p: [0, 0.35, 0.42], a: 0.14 },
+          { p: [0.06, 0.72, 0.78], a: 0.11 },
+          { p: [0.1, 1.05, 1.02], a: 0.09 },
+        ],
+        '#7a3220',
+        573,
+        { samples: 7, segments: 7 },
+      ),
+      head: makeBlobGeometry({ radius: 0.32, detail: 1, scale: [1.05, 0.88, 1.25], jitter: 0.09, color: '#8a3828', seed: 574 }),
+      jaw: makeBlobGeometry({ radius: 0.18, detail: 0, scale: [0.95, 0.45, 1.15], jitter: 0.08, color: '#5a2018', seed: 575 }),
+      fang: makeBlobGeometry({ radius: 0.045, detail: 0, scale: [0.42, 1.45, 0.38], jitter: 0.04, color: '#f0e8d8', seed: 576 }),
+      horn: loft(
+        [
+          { p: [-0.1, 0.12, 0.18], a: 0.05 },
+          { p: [-0.18, 0.42, 0.12], a: 0.028 },
+          { p: [-0.14, 0.68, 0.02], a: 0.008 },
+        ],
+        '#2a1814',
+        577,
+        { samples: 5, segments: 5 },
+      ),
+      eye: makeBlobGeometry({ radius: 0.055, detail: 0, scale: [1.1, 0.75, 0.55], jitter: 0.04, color: '#ff6020', seed: 578 }),
+      wing: loft(
+        [
+          { p: [0.06, 0.55, 0.02], a: 0.1, b: 0.28 },
+          { p: [0.58, 1.05, -0.12], a: 0.045, b: 0.52 },
+          { p: [1.05, 0.62, -0.28], a: 0.012, b: 0.14 },
+        ],
+        '#4a1814',
+        579,
+      ),
+      tail: loft(
+        [
+          { p: [0, 0.28, -0.55], a: 0.12 },
+          { p: [0.12, 0.42, -1.05], a: 0.09 },
+          { p: [0.08, 0.22, -1.55], a: 0.05 },
+          { p: [0.02, 0.08, -1.95], a: 0.022 },
+        ],
+        '#5a2218',
+        580,
+        { samples: 6, segments: 8 },
+      ),
+      claw: loft(
+        [
+          { p: [0.38, 0.08, 0.22], a: 0.055 },
+          { p: [0.52, -0.08, 0.28], a: 0.038 },
+          { p: [0.58, -0.22, 0.24], a: 0.022 },
+        ],
+        '#2a1010',
+        581,
+        { samples: 5, segments: 5 },
+      ),
+      leg: loft(
+        [
+          { p: [0.18, 0.32, 0.12], a: 0.11 },
+          { p: [0.2, 0.08, 0.16], a: 0.09 },
+          { p: [0.18, 0.01, 0.14], a: 0.1 },
+        ],
+        '#4a2018',
+        582,
+        { samples: 5, segments: 6 },
+      ),
+    },
     oni: {
       torso: makeBlobGeometry({ radius: 0.4, detail: 1, scale: [0.95, 1.25, 0.72], jitter: 0.09, color: '#6b2a28', seed: 541 }),
       sash: makeBlobGeometry({ radius: 0.22, detail: 0, scale: [1.15, 0.28, 0.85], jitter: 0.06, color: '#2a1814', seed: 542 }),
@@ -228,6 +345,78 @@ export function MonsterMesh({ kind, geo }) {
         <FacetMesh geometry={geo.tail} position={[0, 0.55, 0]} roughness={0.72} />
         <FacetMesh geometry={geo.leg} position={[0.06, 0.42, 0.04]} roughness={0.45} />
         <FacetMesh geometry={geo.leg} position={[-0.06, 0.42, 0.04]} roughness={0.45} />
+      </group>
+    );
+  }
+  if (kind === 'titan') {
+    return (
+      <group>
+        <FacetMesh geometry={geo.core} position={[0, 0.95, 0]} roughness={0.85} castShadow receiveShadow />
+        <FacetMesh geometry={geo.plate} position={[0, 1.05, 0.02]} roughness={0.75} castShadow />
+        <FacetMesh geometry={geo.skirt} position={[0, 0.52, 0]} roughness={0.9} castShadow />
+        <FacetMesh geometry={geo.pauldron} position={[0.52, 1.22, 0]} roughness={0.7} castShadow />
+        <Flip>
+          <FacetMesh geometry={geo.pauldron} position={[0.52, 1.22, 0]} roughness={0.7} castShadow />
+        </Flip>
+        <FacetMesh geometry={geo.head} position={[0, 1.62, 0.04]} roughness={0.72} castShadow />
+        <FacetMesh geometry={geo.visor} position={[0, 1.58, 0.22]} roughness={0.45} />
+        <FacetMesh geometry={geo.eye} position={[0.1, 1.62, 0.26]} roughness={0.25} />
+        <FacetMesh geometry={geo.eye} position={[-0.1, 1.62, 0.26]} roughness={0.25} />
+        <group position={[0, 1.62, 0]}>
+          <FacetMesh geometry={geo.horn} roughness={0.35} castShadow />
+          <Flip>
+            <FacetMesh geometry={geo.horn} roughness={0.35} castShadow />
+          </Flip>
+          <FacetMesh geometry={geo.spike} position={[0, 0.82, -0.06]} roughness={0.5} castShadow />
+        </group>
+        <FacetMesh geometry={geo.wing} position={[0.08, 1.05, -0.12]} roughness={0.88} castShadow />
+        <Flip>
+          <FacetMesh geometry={geo.wing} position={[0.08, 1.05, -0.12]} roughness={0.88} castShadow />
+        </Flip>
+        <FacetMesh geometry={geo.arm} roughness={0.8} castShadow />
+        <Flip>
+          <FacetMesh geometry={geo.arm} roughness={0.8} castShadow />
+        </Flip>
+        <FacetMesh geometry={geo.fist} position={[0.86, 0.06, 0.16]} roughness={0.75} castShadow />
+        <FacetMesh geometry={geo.fist} position={[-0.86, 0.06, 0.16]} roughness={0.75} castShadow />
+        <FacetMesh geometry={geo.leg} roughness={0.85} castShadow />
+        <Flip>
+          <FacetMesh geometry={geo.leg} roughness={0.85} castShadow />
+        </Flip>
+      </group>
+    );
+  }
+  if (kind === 'wyrm') {
+    return (
+      <group rotation={[0, Math.PI, 0]}>
+        <FacetMesh geometry={geo.belly} position={[0, 0.62, 0]} roughness={0.72} castShadow receiveShadow />
+        <FacetMesh geometry={geo.spine} position={[0, 1.05, -0.08]} roughness={0.65} castShadow />
+        <FacetMesh geometry={geo.neck} roughness={0.7} castShadow />
+        <FacetMesh geometry={geo.head} position={[0.1, 1.38, 1.08]} roughness={0.65} castShadow />
+        <FacetMesh geometry={geo.jaw} position={[0.1, 1.18, 1.22]} roughness={0.6} castShadow />
+        <FacetMesh geometry={geo.fang} position={[0.16, 1.12, 1.32]} roughness={0.35} />
+        <FacetMesh geometry={geo.fang} position={[-0.02, 1.12, 1.32]} roughness={0.35} />
+        <FacetMesh geometry={geo.eye} position={[0.18, 1.48, 1.18]} roughness={0.2} />
+        <FacetMesh geometry={geo.eye} position={[-0.02, 1.48, 1.18]} roughness={0.2} />
+        <group position={[0.1, 1.42, 1.05]}>
+          <FacetMesh geometry={geo.horn} roughness={0.55} castShadow />
+          <Flip>
+            <FacetMesh geometry={geo.horn} roughness={0.55} castShadow />
+          </Flip>
+        </group>
+        <FacetMesh geometry={geo.wing} position={[0.06, 0.95, 0.02]} roughness={0.78} castShadow />
+        <Flip>
+          <FacetMesh geometry={geo.wing} position={[0.06, 0.95, 0.02]} roughness={0.78} castShadow />
+        </Flip>
+        <FacetMesh geometry={geo.tail} position={[0, 0.55, 0]} roughness={0.75} castShadow />
+        <FacetMesh geometry={geo.claw} position={[0.42, 0.12, 0.38]} roughness={0.7} castShadow />
+        <Flip>
+          <FacetMesh geometry={geo.claw} position={[0.42, 0.12, 0.38]} roughness={0.7} castShadow />
+        </Flip>
+        <FacetMesh geometry={geo.leg} position={[0.22, 0, 0.28]} roughness={0.8} castShadow />
+        <Flip>
+          <FacetMesh geometry={geo.leg} position={[0.22, 0, 0.28]} roughness={0.8} castShadow />
+        </Flip>
       </group>
     );
   }

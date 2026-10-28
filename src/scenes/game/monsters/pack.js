@@ -31,6 +31,33 @@ export function pickSpot(rnd, spec = {}, minPlayer = SPAWN_SAFE) {
   return { x: 18, z: -22, y: terrainHeight(18, -22) };
 }
 
+const CORNER_BOSSES = ['titan', 'wyrm'];
+
+function makeMonsterState(id, kind, x, z, yaw = 0) {
+  const spec = MONSTER_KINDS[kind];
+  return {
+    id,
+    kind,
+    x,
+    y: terrainHeight(x, z),
+    z,
+    homeX: x,
+    homeZ: z,
+    yaw,
+    hp: spec.hp,
+    dead: false,
+    fade: 0,
+    respawn: 0,
+    cd: 0.6,
+    hitLock: 0,
+    burnLock: 0,
+    hurt: 0,
+    wander: 0,
+    wx: 0,
+    wz: 0,
+  };
+}
+
 /** 全图怪物列表：模块级缓存，避免切进游戏模式时在 React mount 里重算 */
 let cached = null;
 
@@ -41,30 +68,16 @@ export function getMonsterPack() {
   let id = 1;
   for (const kind of Object.keys(MONSTER_KINDS)) {
     const spec = MONSTER_KINDS[kind];
+    if (!spec.count) continue;
     for (let i = 0; i < spec.count; i++) {
       const p = pickSpot(rnd, spec.zone, SPAWN_SAFE);
-      list.push({
-        id: id++,
-        kind,
-        x: p.x,
-        y: p.y,
-        z: p.z,
-        homeX: p.x,
-        homeZ: p.z,
-        yaw: rnd() * Math.PI * 2,
-        hp: spec.hp,
-        dead: false,
-        fade: 0,
-        respawn: 0,
-        cd: 0.6,
-        hitLock: 0,
-        burnLock: 0,
-        hurt: 0,
-        wander: 0,
-        wx: 0,
-        wz: 0,
-      });
+      list.push(makeMonsterState(id++, kind, p.x, p.z, rnd() * Math.PI * 2));
     }
+  }
+  for (const kind of CORNER_BOSSES) {
+    const spec = MONSTER_KINDS[kind];
+    const [ax, az] = spec.zone.anchor;
+    list.push(makeMonsterState(id++, kind, ax, az, Math.atan2(SPAWN[0] - ax, SPAWN[1] - az)));
   }
   cached = list;
   return cached;

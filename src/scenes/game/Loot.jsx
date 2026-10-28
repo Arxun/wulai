@@ -4,8 +4,8 @@ import * as THREE from 'three';
 import FacetMesh from '../../lib/components/FacetMesh';
 import { makeBlobGeometry } from '../../lib/geometry/organic';
 import { makeLoftGeometry } from '../../lib/geometry/loft';
-import { equipWeapon, grantWeapon, loot, spawnLoot } from './stores/combatStore';
-import { SPAWN, terrainHeight } from './maps/huangshan/heightfield';
+import { loot, spawnMapStarterLoot } from './stores/combatStore';
+import { terrainHeight } from './maps/huangshan/heightfield';
 
 /**
  * 地上的掉落物：武器缩小立着，药是红/蓝小瓶。
@@ -209,9 +209,7 @@ export default function Loot() {
   const geo = useLootGeo();
   const [list, setList] = useState([]);
   useEffect(() => {
-    spawnLoot(SPAWN[0] + 1.2, SPAWN[1] + 0.3, 'blood');
-    grantWeapon('blood');
-    equipWeapon('blood');
+    spawnMapStarterLoot();
     const id = setInterval(() => setList(loot.slice()), 120);
     return () => clearInterval(id);
   }, []);

@@ -1,4 +1,5 @@
 import { MOVES, resetMoves } from '../../../lib/animation/combatMoves';
+import { HALF } from '../maps/huangshan/heightfield';
 
 /**
  * 战斗数值：等级 / 经验 / 攻防血蓝 / 装备 / 掉落 / 飘字。
@@ -124,6 +125,14 @@ export function resetCombat() {
   fx.skill = 0;
   loot.length = 0;
   floats.length = 0;
+  spawnMapStarterLoot();
+}
+
+/** 西北角固定掉落：HUD 6 号「血棘魔剑」，需走近拾取 */
+export function spawnMapStarterLoot() {
+  if (combat.owned.blood) return;
+  if (loot.some((it) => it.id === 'blood')) return;
+  spawnLoot(-(HALF - 10), -(HALF - 10), 'blood');
 }
 
 export function liveStats() {

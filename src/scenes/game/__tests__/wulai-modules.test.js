@@ -5,6 +5,7 @@ import { SPAWN, terrainHeight } from '../maps/huangshan/heightfield';
 import { resolvePlayerObstacles, SU7_SPAWN } from '../maps/huangshan/obstacles';
 import { activeMap, DEFAULT_MAP_ID, getMapId, MAPS, setMapId } from '../maps/registry';
 import { MONSTER_KINDS } from '../monsters/kinds';
+import { getMonsterPack } from '../monsters/pack';
 import { VEHICLE_DEFS, DEFAULT_VEHICLE_ID, activeVehicleSpeedMult, vehicle } from '../vehicles';
 import { SU7_VEHICLE } from '../vehicles/su7/def';
 import {
@@ -146,6 +147,21 @@ describe('怪物 monsters/', () => {
       expect(spec.atk).toBeGreaterThan(0);
       expect(spec.count).toBeGreaterThan(0);
     }
+  });
+
+  it('角 Boss 固定锚点且强度高于山魈', () => {
+    for (const id of ['titan', 'wyrm']) {
+      const spec = MONSTER_KINDS[id];
+      expect(spec.boss).toBe(true);
+      expect(spec.hp).toBeGreaterThan(MONSTER_KINDS.oni.hp);
+      expect(spec.zone.anchor?.length).toBe(2);
+    }
+  });
+
+  it('getMonsterPack 含两只角 Boss', () => {
+    const pack = getMonsterPack();
+    expect(pack.filter((m) => m.kind === 'titan')).toHaveLength(1);
+    expect(pack.filter((m) => m.kind === 'wyrm')).toHaveLength(1);
   });
 });
 
