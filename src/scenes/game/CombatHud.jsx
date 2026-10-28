@@ -31,8 +31,9 @@ function Avatar() {
   );
 }
 
-export default function CombatHud() {
+export default function CombatHud({ mobileCompact = false }) {
   const [tick, setTick] = useState(0);
+  const [folded, setFolded] = useState(false);
   useEffect(() => {
     const id = setInterval(() => setTick((n) => n + 1), 100);
     return () => clearInterval(id);
@@ -44,72 +45,122 @@ export default function CombatHud() {
   void tick;
 
   return (
-    <div className={`chud${combat.hurt > 0 ? ' hit' : ''}${combat.dead ? ' down' : ''}`}>
-      <Avatar />
+    <div
+      className={`chud${combat.hurt > 0 ? ' hit' : ''}${combat.dead ? ' down' : ''}${
+        folded ? ' chud--folded' : ''
+      }${mobileCompact ? ' chud--mobile' : ''}`}
+    >
+      {!folded && <Avatar />}
       <div className="chud-main">
-        <div className="chud-name">
-          <b>{HERO_NAME}</b>
-          <span>Lv.{combat.level}{combat.level >= LEVEL_MAX ? ' MAX' : ''}</span>
+        <button
+          type="button"
+          className="chud-fold-toggle"
+          aria-expanded={!folded}
+          onClick={() => setFolded((f) => !f)}
+        >
+          {!folded ? (
+            <>
+              <b>{HERO_NAME}</b>
+              <span>
+                Lv.{combat.level}
+                {combat.level >= LEVEL_MAX ? ' MAX' : ''}
+              </span>
+            </>
+          ) : (
+            <span className="chud-fold-toggle__hint">人物</span>
+          )}
+          <span className="chud-fold-toggle__chev" aria-hidden>
+            {folded ? '▸' : '▾'}
+          </span>
+        </button>
+        <div className="chud-bars">
+          <div className="chud-bar hp">
+            <i style={{ width: `${Math.max(0, hp) * 100}%` }} />
+            <em>
+              {Math.ceil(combat.hp)} / {s.maxHp}
+            </em>
+          </div>
+          <div className="chud-bar mp">
+            <i style={{ width: `${Math.max(0, mp) * 100}%` }} />
+            <em>
+              {Math.ceil(combat.mp)} / {s.maxMp}
+            </em>
+          </div>
+          <div className="chud-bar xp">
+            <i style={{ width: `${Math.max(0, Math.min(1, xp)) * 100}%` }} />
+            {folded && (
+              <em className="chud-xp-label">
+                {combat.level >= LEVEL_MAX
+                  ? `Lv.${combat.level} MAX`
+                  : `Lv.${combat.level} · ${Math.floor(combat.xp)}/${s.xpNeed}`}
+              </em>
+            )}
+          </div>
         </div>
-        <div className="chud-bar hp">
-          <i style={{ width: `${Math.max(0, hp) * 100}%` }} />
-          <em>
-            {Math.ceil(combat.hp)} / {s.maxHp}
-          </em>
-        </div>
-        <div className="chud-bar mp">
-          <i style={{ width: `${Math.max(0, mp) * 100}%` }} />
-          <em>
-            {Math.ceil(combat.mp)} / {s.maxMp}
-          </em>
-        </div>
-        <div className="chud-bar xp">
-          <i style={{ width: `${Math.max(0, Math.min(1, xp)) * 100}%` }} />
-        </div>
-        <div className="chud-meta">
-          <span>攻 {s.atk}</span>
-          <span>防 {s.def}</span>
-          <span className="chud-wep">{s.weaponName}</span>
-        </div>
-        <div className="chud-atk">
-          <em>J 刺/劈/砍/旋</em>
-          <em>空中 J</em>
-          <em>E</em>
-          <em>K</em>
-          <em>R</em>
-        </div>
-        {world.move ? (
-          <div className="chud-move">{moveOf(world.move).name}</div>
-        ) : (
-          <div className="chud-combo">
-            {COMBO.map((id, i) => (
-              <i key={id} className={world.combo === i && world.comboGate > 0 ? 'next' : ''}>
-                {moveOf(id).name}
-              </i>
-            ))}
+        {!folded && (
+          <div className="chud-extra">
+            <div className="chud-meta">
+              <span>攻 {s.atk}</span>
+              <span>防 {s.def}</span>
+              <span className="chud-wep">{s.weaponName}</span>
+            </div>
+            <div className="chud-atk">
+              <em>J 刺/劈/砍/旋</em>
+              <em>空中 J</em>
+              <em title={moveOf('skill').name}>{moveOf('skill').name[0]}</em>
+              <em
+                className={combat.whirlCd > 0 ? 'cd' : ''}
+                title={moveOf('whirl').name}
+              >
+                {moveOf('whirl').name[0]}
+                {combat.whirlCd > 0 ? ` ${Math.ceil(combat.whirlCd)}s` : ''}
+              </em>
+              <em
+                className={combat.wulaiCd > 0 ? 'cd' : ''}
+                title={moveOf('wulai').name}
+              >
+                {moveOf('wulai').name[0]}
+                {combat.wulaiCd > 0 ? ` ${Math.ceil(combat.wulaiCd)}s` : ''}
+              </em>
+            </div>
+            {world.move ? (
+              <div className="chud-move">{moveOf(world.move).name}</div>
+            ) : (
+              <div className="chud-combo">
+                {COMBO.map((id, i) => (
+                  <i key={id} className={world.combo === i && world.comboGate > 0 ? 'next' : ''}>
+                    {moveOf(id).name}
+                  </i>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
       {combat.toastAge > 0 && <div className="chud-toast">{combat.toast}</div>}
-      <div className="chud-side">
-        <div className="chud-bag">
-          {WEAPON_ORDER.map((id, i) => (
-            <b
-              key={id}
-              className={`${combat.owned[id] ? 'own' : ''}${combat.weapon === id ? ' on' : ''}`}
-              title={WEAPONS[id].name}
-              onClick={() => equipWeapon(id)}
-            >
-              {i + 1}
+      {!mobileCompact && !folded && (
+        <div className="chud-side">
+          <div className="chud-bag">
+            {WEAPON_ORDER.map((id, i) => (
+              <button
+                key={id}
+                type="button"
+                className={`chud-wep-btn${combat.owned[id] ? ' own' : ''}${combat.weapon === id ? ' on' : ''}`}
+                title={WEAPONS[id].name}
+                disabled={!combat.owned[id]}
+                onClick={() => equipWeapon(id)}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+          <div className="chud-pots">
+            <b className={`hp${combat.pots.hp ? ' own' : ''}`} title={POTIONS.hp.name} onClick={() => usePotion('hp')}>
+              Q {combat.pots.hp}
             </b>
-          ))}
+          </div>
         </div>
-        <div className="chud-pots">
-          <b className={`hp${combat.pots.hp ? ' own' : ''}`} title={POTIONS.hp.name} onClick={() => usePotion('hp')}>
-            Q {combat.pots.hp}
-          </b>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -74,6 +74,10 @@ export const combat = {
   deathStain: null,
   /** 本次死亡已过去的时间（秒），HUD / 复活用 */
   deathAge: 0,
+  /** 武来剩余冷却（秒） */
+  wulaiCd: 0,
+  /** 回旋斩剩余冷却（秒） */
+  whirlCd: 0,
 };
 
 /** 地上的掉落物。Loot.jsx 每帧读这份。 */
@@ -109,6 +113,8 @@ export function resetCombat() {
   combat.hurt = 0;
   combat.deathStain = null;
   combat.deathAge = 0;
+  combat.wulaiCd = 0;
+  combat.whirlCd = 0;
   resetMoves(world);
   world.striking = false;
   fx.shake = 0;
@@ -236,6 +242,7 @@ export function spawnLoot(x, z, id) {
 export function rollDrops(table, x, z) {
   if (!table) return;
   for (const [id, p] of Object.entries(table)) {
+    if (id === 'mp') continue;
     if (WEAPONS[id] && combat.owned[id]) continue;
     if (Math.random() < p) spawnLoot(x, z, id);
   }
@@ -318,7 +325,11 @@ export const SWING_TIME = MOVES.stab.time;
 export const HEAVY_TIME = MOVES.skill.time;
 export const HEAVY_MP = 14;
 export const WHIRL_MP = 16;
+/** 回旋斩冷却（秒），移动端与 PC 共用 */
+export const WHIRL_CD = 10;
 export const WULAI_MP = 28;
+/** 大招「武来」冷却（秒），移动端与 PC 共用 */
+export const WULAI_CD = 30;
 export const HEAVY_MULT = MOVES.skill.mult;
 export const WHIRL_MULT = MOVES.whirl.mult;
 export const WULAI_MULT = MOVES.wulai.mult;

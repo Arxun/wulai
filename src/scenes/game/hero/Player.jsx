@@ -46,7 +46,9 @@ import {
 import {
   HEAVY_MP,
   HEAVY_TIME,
+  WHIRL_CD,
   WHIRL_MP,
+  WULAI_CD,
   WULAI_MP,
   WEAPON_ORDER,
   combat,
@@ -160,12 +162,20 @@ export default function Player({ lightRef, skidRef, lineRef }) {
         return;
       }
       if (code === 'KeyE') {
+        if (combat.whirlCd > 0) {
+          combat.toast = `回旋斩冷却中 · ${Math.ceil(combat.whirlCd)}s`;
+          combat.toastAge = 1.2;
+          return;
+        }
         if (combat.mp < WHIRL_MP) {
           combat.toast = `蓝不够 · 回旋斩需要 ${WHIRL_MP}`;
           combat.toastAge = 1.4;
           return;
         }
-        if (tryWhirl(world)) combat.mp -= WHIRL_MP;
+        if (tryWhirl(world)) {
+          combat.mp -= WHIRL_MP;
+          combat.whirlCd = WHIRL_CD;
+        }
         return;
       }
       if (code === 'KeyJ') {
@@ -178,6 +188,11 @@ export default function Player({ lightRef, skidRef, lineRef }) {
         return;
       }
       if (code === 'KeyR') {
+        if (combat.wulaiCd > 0) {
+          combat.toast = `${ULT_SKILL_NAME}冷却中 · ${Math.ceil(combat.wulaiCd)}s`;
+          combat.toastAge = 1.2;
+          return;
+        }
         if (combat.mp < WULAI_MP) {
           combat.toast = `蓝不够 · ${ULT_SKILL_NAME}需要 ${WULAI_MP}`;
           combat.toastAge = 1.6;
@@ -185,6 +200,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
         }
         if (tryWulai(world)) {
           combat.mp -= WULAI_MP;
+          combat.wulaiCd = WULAI_CD;
           fx.skill = 0.2;
           fx.shake = Math.max(fx.shake, 0.2);
         }
@@ -360,6 +376,8 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     if (fx.skill > 0) fx.skill = Math.max(0, fx.skill - dtRaw);
     if (combat.hurt > 0) combat.hurt = Math.max(0, combat.hurt - dtRaw);
     if (combat.toastAge > 0) combat.toastAge = Math.max(0, combat.toastAge - dt);
+    if (combat.wulaiCd > 0) combat.wulaiCd = Math.max(0, combat.wulaiCd - dt);
+    if (combat.whirlCd > 0) combat.whirlCd = Math.max(0, combat.whirlCd - dt);
     if (!combat.dead) {
       const st = statsAt(combat.level);
       combat.mp = Math.min(st.maxMp, combat.mp + dt * MP_REGEN_PER_SEC);

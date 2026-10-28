@@ -12,6 +12,8 @@ import { useEffect, useRef } from 'react';
  *   所以放氮气、点按跳跃这种一次性操作要走回调，不要在 useFrame 里自己判边沿。
  */
 
+import { mobileKeys, subscribeMobilePress } from '../../scenes/game/mobile/mobileInputStore';
+
 const BLOCK = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
 
 export function useKeyboard(onPress, onRelease) {
@@ -35,10 +37,14 @@ export function useKeyboard(onPress, onRelease) {
     window.addEventListener('keydown', down, { passive: false });
     window.addEventListener('keyup', up);
     window.addEventListener('blur', blur);
+    const unsubMobile = subscribeMobilePress((code) => {
+      cb.current?.(code);
+    });
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
+      unsubMobile();
     };
   }, []);
   return keys;
@@ -51,7 +57,7 @@ export function useKeyboard(onPress, onRelease) {
  * 氮气（Ctrl）是一次性操作，走 useKeyboard 的 onPress，不在这里。
  */
 export function moveAxis(keys) {
-  const k = (...names) => names.some((n) => keys.has(n));
+  const k = (...names) => names.some((n) => keys.has(n) || mobileKeys.has(n));
   const y = (k('KeyW', 'ArrowUp') ? 1 : 0) - (k('KeyS', 'ArrowDown') ? 1 : 0);
   const x = (k('KeyD', 'ArrowRight') ? 1 : 0) - (k('KeyA', 'ArrowLeft') ? 1 : 0);
   return { x, y, drift: k('ShiftLeft', 'ShiftRight') };

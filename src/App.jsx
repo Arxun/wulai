@@ -15,6 +15,9 @@ import LowPolyScene from './scenes/lowpoly/LowPolyScene';
 // import FullModelScene from './scenes/_legacy/FullModelScene';
 // import PhotoParallaxScene from './scenes/_legacy/PhotoParallaxScene';
 import { GAME_PERF } from './scenes/game/config/perf';
+import { useGameMobile } from './lib/hooks/useGameMobile';
+import MobileGameFrame from './scenes/game/mobile/MobileGameFrame';
+import MobileRotatePrompt from './scenes/game/mobile/MobileRotatePrompt';
 import './App.css';
 
 /** 渲染当前模式的场景（画布配置来自 MODES） */
@@ -68,6 +71,8 @@ export default function App() {
   const cfg = MODES[mode];
   const isGame = mode === 'game';
   const isLowPoly = mode === 'lowpoly';
+  const gameMobile = useGameMobile();
+  const mobileGame = isGame && gameMobile.active;
 
   useEffect(() => {
     if (isGame) beginGameLoad();
@@ -115,7 +120,11 @@ export default function App() {
   ];
 
   return (
-    <div className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}`}>
+    <div
+      className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}${mobileGame ? ' mobile-game' : ''}${
+        mobileGame && !gameMobile.landscape ? ' mobile-portrait' : ''
+      }`}
+    >
       {showRef && isLowPoly && (
         <div className="frame ref">
           <img src={REFERENCE_PHOTO.url} alt="参考照片" />
@@ -123,8 +132,22 @@ export default function App() {
         </div>
       )}
 
-      <div className={`frame${isGame ? ' wide' : ''}`}>
-        <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
+      <div className={`frame${isGame ? ' wide' : ''}${mobileGame ? ' mobile-frame' : ''}`}>
+        {mobileGame && !gameMobile.landscape && <MobileRotatePrompt />}
+
+        {mobileGame ? (
+          <MobileGameFrame enabled={gameMobile.landscape}>
+            <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
+            {isGame && <GameLoadingOverlay />}
+            {isGame && <GameHud mobileActive={gameMobile.landscape} />}
+          </MobileGameFrame>
+        ) : (
+          <>
+            <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
+            {isGame && <GameLoadingOverlay />}
+            {isGame && <GameHud />}
+          </>
+        )}
 
         {isLowPoly && (
           <img
@@ -136,9 +159,6 @@ export default function App() {
           />
         )}
         {!isGame && <span className="tag">{cfg.tag}</span>}
-
-        {isGame && <GameLoadingOverlay />}
-        {isGame && <GameHud />}
 
         <ControlPanel items={panelItems} />
         <div className="hint">{cfg.hint}</div>

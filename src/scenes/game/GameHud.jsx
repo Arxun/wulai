@@ -4,6 +4,9 @@ import MapHudHeader from './MapHudHeader';
 import { combat, fx } from './stores/combatStore';
 import { drift, BOOST_TIME, NITRO_COST, NITRO_MAX } from './stores/driftStore';
 import DeathQuote from './DeathQuote';
+import MobileMovePad from './mobile/MobileMovePad';
+import MobileRightPanel from './mobile/MobileRightPanel';
+import MobileWeaponBar from './mobile/MobileWeaponBar';
 import { WulaiTitle } from './skills/fx';
 import { vehicle } from './vehicles/runtime';
 
@@ -19,8 +22,14 @@ const fmt = (n) => n.toFixed(1);
 const MS_TO_KMH = 3.6;
 const fmtSpeedKmh = (mps) => fmt(mps * MS_TO_KMH);
 
-export default function GameHud() {
+export default function GameHud({ mobileActive = false }) {
   const [v, setV] = useState({ ...drift, hurt: 0, skill: 0, nearCar: false, inCar: false });
+  /** null = 跟上车状态：开车展开、步行折叠 */
+  const [driveHudManual, setDriveHudManual] = useState(null);
+
+  useEffect(() => {
+    setDriveHudManual(null);
+  }, [v.inCar]);
 
   useEffect(() => {
     const id = setInterval(
@@ -39,6 +48,14 @@ export default function GameHud() {
 
   const full = v.nitro >= NITRO_MAX;
   const need = Math.max(0, NITRO_COST - v.dist);
+  const driveHudFolded = driveHudManual !== null ? driveHudManual : !v.inCar;
+
+  const toggleDriveHud = () => {
+    setDriveHudManual((prev) => {
+      const folded = prev !== null ? prev : !v.inCar;
+      return !folded;
+    });
+  };
 
   return (
     <>
@@ -47,16 +64,30 @@ export default function GameHud() {
       <div className={`skillflash${v.skill > 0 ? ' on' : ''}`} />
       <WulaiTitle />
       <DeathQuote />
-      {v.inCar && <div className="hud-flash interact">按 F 下车</div>}
-      {!v.inCar && v.nearCar && <div className="hud-flash interact">按 F 上车</div>}
-      <div className="hud-left">
+      {!mobileActive && v.inCar && <div className="hud-flash interact">按 F 下车</div>}
+      {!mobileActive && !v.inCar && v.nearCar && <div className="hud-flash interact">按 F 上车</div>}
+      <div className={`hud-left${mobileActive ? ' hud-left--mobile' : ''}`}>
         <MapHudHeader />
-        <CombatHud />
+        <CombatHud mobileCompact={mobileActive} />
+        {mobileActive && <MobileWeaponBar />}
       </div>
       <div className={`speedlines${v.boost > 0 ? ' on' : ''}`} />
       <div className={`speedlines fine${v.boost > 0 ? ' on' : ''}`} />
 
-      <div className={`hud${v.boost > 0 ? ' boosting' : ''}`}>
+      <div
+        className={`hud${driveHudFolded ? ' hud--folded' : ''}${v.boost > 0 ? ' boosting' : ''}${v.inCar ? ' hud--driving' : ''}`}
+      >
+        <button type="button" className="hud-fold-toggle" onClick={toggleDriveHud} aria-expanded={!driveHudFolded}>
+          <span className="hud-fold-toggle__title">速度 · 氮气</span>
+          {driveHudFolded && v.inCar && (
+            <span className="hud-fold-toggle__peek">{fmtSpeedKmh(v.speed)} km/h</span>
+          )}
+          <span className="hud-fold-toggle__chev" aria-hidden>
+            {driveHudFolded ? '▸' : '▾'}
+          </span>
+        </button>
+
+        <div className="hud-body">
         <div className="hud-row">
           <span className="hud-label">速度</span>
           <span className="hud-value">{fmtSpeedKmh(v.speed)} km/h</span>
@@ -99,7 +130,10 @@ export default function GameHud() {
         {v.air && <div className="hud-flash">跳跃中</div>}
         {v.sliding && <div className="hud-flash">漂移中 +{fmt(v.combo)} m</div>}
         {v.boost > 0 && <div className="hud-flash boost">氮气喷射 {((v.boost / BOOST_TIME) * 100).toFixed(0)}%</div>}
+        </div>
       </div>
+      {mobileActive && <MobileMovePad />}
+      {mobileActive && <MobileRightPanel />}
     </>
   );
 }
