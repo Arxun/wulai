@@ -12,6 +12,7 @@ import {
   jumpPose,
 } from '../../../lib/animation/gait';
 import { moveAxis, useKeyboard } from '../../../lib/hooks/useKeyboard';
+import { mobileView } from '../mobile/mobileViewStore';
 import Person from '../../lowpoly/person/index';
 import { LOCO_RIG } from '../../lowpoly/person/rigs';
 import { ULT_SKILL_NAME } from '../../../config/lore';
@@ -763,7 +764,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
       .set(Math.sin(s.camYaw) * cp, Math.sin(s.camPitch), Math.cos(s.camYaw) * cp)
       // 跑得快 / 喷氮气时镜头拉远，速度感更强
       .multiplyScalar(
-        s.camDist *
+        clamp(s.camDist * mobileView.camDistMult, 2.8, 18) *
           (1 +
             0.12 * s.runMix +
             0.22 * boostK +

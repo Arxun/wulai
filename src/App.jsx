@@ -19,7 +19,7 @@ import { GAME_PERF } from './scenes/game/config/perf';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
 import MobileGameFrame from './scenes/game/mobile/MobileGameFrame';
-import MobileForceLandscape from './scenes/game/mobile/MobileForceLandscape';
+import MobileLandscapeGate from './scenes/game/mobile/MobileLandscapeGate';
 import './App.css';
 
 /** 渲染当前模式的场景（画布配置来自 MODES） */
@@ -142,13 +142,14 @@ export default function App() {
 
       <div className={`frame${isGame ? ' wide' : ''}${mobileGame ? ' mobile-frame' : ''}`}>
         {mobileGame ? (
-          <MobileForceLandscape active={mobilePortrait}>
-            <MobileGameFrame enabled>
+          <>
+            <MobileGameFrame enabled={!mobilePortrait}>
               <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
               {isGame && <GameLoadingOverlay />}
-              {isGame && <GameHud mobileActive />}
+              {!mobilePortrait && isGame && <GameHud mobileActive />}
             </MobileGameFrame>
-          </MobileForceLandscape>
+            {mobilePortrait && <MobileLandscapeGate />}
+          </>
         ) : (
           <>
             <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
