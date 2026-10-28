@@ -12,6 +12,7 @@ import {
   jumpPose,
 } from '../../../lib/animation/gait';
 import { moveAxis, useKeyboard } from '../../../lib/hooks/useKeyboard';
+import { mobileLayout } from '../mobile/mobileLayoutStore';
 import { mobileView } from '../mobile/mobileViewStore';
 import Person from '../../lowpoly/person/index';
 import { LOCO_RIG } from '../../lowpoly/person/rigs';
@@ -290,8 +291,13 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     };
     const move = (e) => {
       if (!s.dragging) return;
-      s.camYaw -= e.movementX * 0.005;
-      s.camPitch = clamp(s.camPitch + e.movementY * 0.004, -0.25, 1.15);
+      if (mobileLayout.portraitWide) {
+        s.camYaw -= e.movementY * 0.005;
+        s.camPitch = clamp(s.camPitch - e.movementX * 0.004, -0.25, 1.15);
+      } else {
+        s.camYaw -= e.movementX * 0.005;
+        s.camPitch = clamp(s.camPitch + e.movementY * 0.004, -0.25, 1.15);
+      }
     };
     const wheel = (e) => {
       e.preventDefault();

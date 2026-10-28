@@ -1080,7 +1080,8 @@ html.mobile-touch-guard #root {
   overflow: hidden;
 }
 
-.mobile-force-landscape {
+/** Canvas + HUD 共用的宽屏根节点（仅 rotate，不 scale） */
+.mobile-portrait-wide-root {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -1091,7 +1092,16 @@ html.mobile-touch-guard #root {
   background: #0a0c10;
 }
 
-.mobile-force-landscape .mobile-game-frame {
+.mobile-portrait-wide-root--pending {
+  inset: 0;
+  transform: none;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mobile-portrait-wide-root .mobile-game-frame {
   position: absolute;
   inset: 0;
 }

@@ -18,17 +18,18 @@ import LowPolyScene from './scenes/lowpoly/LowPolyScene';
 import { GAME_PERF } from './scenes/game/config/perf';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
+import { useMobileWideCanvasKey } from './lib/hooks/useMobileWideCanvasKey';
 import MobileGameFrame from './scenes/game/mobile/MobileGameFrame';
 import MobileForceLandscape from './scenes/game/mobile/MobileForceLandscape';
 import './App.css';
 
 /** 渲染当前模式的场景（画布配置来自 MODES） */
-function ModeCanvas({ mode, autoRotate, controlsRef }) {
+function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal' }) {
   const cfg = MODES[mode];
   const isGame = mode === 'game';
   return (
     <Canvas
-      key={mode}
+      key={isGame ? `${mode}-${canvasKey}` : mode}
       shadows={mode === 'lowpoly' || isGame}
       dpr={isGame ? GAME_PERF.dpr : [1, 2]}
       camera={cfg.camera}
@@ -76,6 +77,7 @@ export default function App() {
   const gameMobile = useGameMobile();
   const mobileGame = isGame && gameMobile.active;
   const mobilePortrait = mobileGame && !gameMobile.landscape;
+  const mobileCanvasKey = useMobileWideCanvasKey(mobilePortrait);
   useMobileInputGuard(mobileGame);
 
   useEffect(() => {
@@ -144,7 +146,12 @@ export default function App() {
         {mobileGame ? (
           <MobileForceLandscape active={mobilePortrait}>
             <MobileGameFrame enabled>
-              <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
+              <ModeCanvas
+                mode={mode}
+                autoRotate={autoRotate}
+                controlsRef={controlsRef}
+                canvasKey={mobileCanvasKey}
+              />
               {isGame && <GameLoadingOverlay />}
               {isGame && <GameHud mobileActive />}
             </MobileGameFrame>
