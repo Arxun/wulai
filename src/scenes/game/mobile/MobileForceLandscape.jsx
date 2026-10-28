@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef } from 'react';
 
 /**
- * 竖屏持机时把游戏区旋转 90°，默认按横屏宽屏布局全屏展示（宽高对调，不做非等比缩放）。
+ * 竖屏（含微信内置浏览器无法系统横屏）时，把游戏区旋转 90° 当宽屏用。
+ * 宽高按 visualViewport 对调后仅 rotate，不做 scale，避免拉伸。
  */
 export default function MobileForceLandscape({ active = false, children }) {
   const ref = useRef(null);
