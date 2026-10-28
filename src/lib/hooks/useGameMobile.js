@@ -40,7 +40,7 @@ export function useGameMobile() {
   }, []);
 
   useEffect(() => {
-    if (!state.active || !state.landscape) return;
+    if (!state.active) return;
     const ori = screen.orientation;
     if (!ori?.lock) return;
     ori.lock('landscape').catch(() => {});
@@ -53,7 +53,7 @@ export function useGameMobile() {
         /* ignore */
       }
     };
-  }, [state.active, state.landscape]);
+  }, [state.active]);
 
   return state;
 }

@@ -18,7 +18,7 @@ import LowPolyScene from './scenes/lowpoly/LowPolyScene';
 import { GAME_PERF } from './scenes/game/config/perf';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import MobileGameFrame from './scenes/game/mobile/MobileGameFrame';
-import MobileRotatePrompt from './scenes/game/mobile/MobileRotatePrompt';
+import MobileForceLandscape from './scenes/game/mobile/MobileForceLandscape';
 import './App.css';
 
 /** 渲染当前模式的场景（画布配置来自 MODES） */
@@ -138,14 +138,14 @@ export default function App() {
       )}
 
       <div className={`frame${isGame ? ' wide' : ''}${mobileGame ? ' mobile-frame' : ''}`}>
-        {mobileGame && !gameMobile.landscape && <MobileRotatePrompt />}
-
         {mobileGame ? (
-          <MobileGameFrame enabled={gameMobile.landscape}>
-            <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
-            {isGame && <GameLoadingOverlay />}
-            {isGame && <GameHud mobileActive={gameMobile.landscape} />}
-          </MobileGameFrame>
+          <MobileForceLandscape rotate={!gameMobile.landscape}>
+            <MobileGameFrame enabled>
+              <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
+              {isGame && <GameLoadingOverlay />}
+              {isGame && <GameHud mobileActive />}
+            </MobileGameFrame>
+          </MobileForceLandscape>
         ) : (
           <>
             <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />

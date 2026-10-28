@@ -1039,52 +1039,30 @@
   touch-action: none;
 }
 
-.page.mobile-portrait .mobile-game-frame,
-.page.mobile-portrait .mobile-game-frame canvas,
-.page.mobile-portrait .hud,
-.page.mobile-portrait .hud-left,
-.page.mobile-portrait .mobile-weapons,
-.page.mobile-portrait .mobile-dpad,
-.page.mobile-portrait .mobile-skills,
-.page.mobile-portrait .mobile-right,
-.page.mobile-portrait .mobile-combat-cluster,
-.page.mobile-portrait .mobile-enter-center {
-  visibility: hidden;
-  pointer-events: none;
+.page.mobile-portrait .frame.mobile-frame {
+  overflow: hidden;
 }
 
-.mobile-rotate {
+/** 竖屏：整页旋转为横屏视口（宽=物理高，高=物理宽） */
+.mobile-force-landscape {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100vh;
+  height: 100vw;
+  width: 100dvh;
+  height: 100dvw;
+  max-width: none;
+  max-height: none;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.mobile-force-landscape .mobile-game-frame {
   position: absolute;
   inset: 0;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: radial-gradient(circle at 50% 40%, #1a2430 0%, #0a0c10 70%);
-  color: #eef4f8;
-  text-align: center;
-  padding: 24px;
-}
-
-.mobile-rotate__icon {
-  font-size: 42px;
-  line-height: 1;
-  opacity: 0.9;
-}
-
-.mobile-rotate__title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.mobile-rotate__sub {
-  margin: 0;
-  font-size: 14px;
-  color: rgba(238, 244, 248, 0.72);
 }
 
 .mobile-game-frame {
