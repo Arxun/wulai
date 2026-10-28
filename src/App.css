@@ -1076,34 +1076,52 @@ html.mobile-touch-guard #root {
   touch-action: none;
 }
 
-.page.mobile-portrait .frame.mobile-frame {
+.page.mobile-game .frame.mobile-frame {
   overflow: hidden;
 }
 
-/** Canvas + HUD 共用的宽屏根节点（仅 rotate，不 scale） */
-.mobile-portrait-wide-root {
+/** 手动旋转：整页根节点（仅 rotate，不 scale；90/270 时 JS 对调宽高） */
+.mobile-view-rotator {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%) rotate(90deg);
+  left: 0;
+  top: 0;
   transform-origin: center center;
   overflow: hidden;
   touch-action: none;
   background: #0a0c10;
 }
 
-.mobile-portrait-wide-root--pending {
-  inset: 0;
-  transform: none;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
+.mobile-view-rotator--swap {
+  left: 50%;
+  top: 50%;
 }
 
-.mobile-portrait-wide-root .mobile-game-frame {
+.mobile-view-rotator .mobile-game-frame {
   position: absolute;
   inset: 0;
+}
+
+.mobile-rotate-fab {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 209, 102, 0.55);
+  background: rgba(12, 16, 22, 0.88);
+  color: #ffe8a8;
+  font-size: 14px;
+  font-weight: 700;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+.mobile-rotate-fab:active {
+  background: rgba(40, 36, 24, 0.95);
 }
 
 .mobile-game-frame {

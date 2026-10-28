@@ -1,6 +1,9 @@
-/** 竖屏宽屏：DOM 根节点 rotate(90deg)，子元素按对调后的视口布局 */
+/** 移动端手动旋转整页（度，顺时针） */
 export const mobileLayout = {
-  portraitWide: false,
+  /** 0 | 90 | 180 | 270 */
+  viewRotation: 0,
+  /** 90/270 时视口宽高对调 */
+  swapViewport: false,
   wideW: 0,
   wideH: 0,
 };

@@ -12,19 +12,18 @@ import GameLoadingOverlay from './scenes/game/GameLoadingOverlay';
 import GameScene from './scenes/game';
 import { beginGameLoad, resetGameLoad } from './scenes/game/stores/gameLoadingStore';
 import LowPolyScene from './scenes/lowpoly/LowPolyScene';
-// Legacy（入口已隐藏）：360° 模型、照片视差 → src/scenes/_legacy/
-// import FullModelScene from './scenes/_legacy/FullModelScene';
-// import PhotoParallaxScene from './scenes/_legacy/PhotoParallaxScene';
 import { GAME_PERF } from './scenes/game/config/perf';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
-import { useMobileWideCanvasKey } from './lib/hooks/useMobileWideCanvasKey';
+import MobileCanvasResize from './scenes/game/mobile/MobileCanvasResize';
 import MobileGameFrame from './scenes/game/mobile/MobileGameFrame';
-import MobileForceLandscape from './scenes/game/mobile/MobileForceLandscape';
+import { computeMobileViewLayout, mobileCanvasKey } from './scenes/game/mobile/mobileViewLayout';
+import MobileRotateFab from './scenes/game/mobile/MobileRotateFab';
+import MobileViewRotator from './scenes/game/mobile/MobileViewRotator';
 import './App.css';
 
 /** 渲染当前模式的场景（画布配置来自 MODES） */
-function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal' }) {
+function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal', mobileLayoutSync = false }) {
   const cfg = MODES[mode];
   const isGame = mode === 'game';
   return (
@@ -34,14 +33,13 @@ function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal' }) {
       dpr={isGame ? GAME_PERF.dpr : [1, 2]}
       camera={cfg.camera}
       gl={{ antialias: true, preserveDrawingBuffer: !isGame }}
+      resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
+      style={{ display: 'block', width: '100%', height: '100%' }}
     >
+      {isGame && mobileLayoutSync && <MobileCanvasResize />}
       {isGame && <GameLoadReporter />}
       <Suspense fallback={null}>
         {mode === 'game' && <GameScene />}
-        {/* Legacy
-        {mode === 'full' && <FullModelScene autoRotate={autoRotate} usePhoto={usePhoto} controlsRef={controlsRef} />}
-        {mode === 'parallax' && <PhotoParallaxScene strength={strength} auto={autoRotate} />}
-        */}
       </Suspense>
       {mode === 'lowpoly' && (
         <>
@@ -70,15 +68,30 @@ export default function App() {
   const [showRef, setShowRef] = useState(urlParam.bool('ref', true));
   const [autoRotate, setAutoRotate] = useState(urlParam.bool('auto', mode === 'lowpoly'));
   const [overlay, setOverlay] = useState(urlParam.number('overlay', 0));
+  const [viewRotation, setViewRotation] = useState(0);
+  const [viewportTick, setViewportTick] = useState(0);
 
   const cfg = MODES[mode];
   const isGame = mode === 'game';
   const isLowPoly = mode === 'lowpoly';
   const gameMobile = useGameMobile();
   const mobileGame = isGame && gameMobile.active;
-  const mobilePortrait = mobileGame && !gameMobile.landscape;
-  const mobileCanvasKey = useMobileWideCanvasKey(mobilePortrait);
+  const mobileViewLayout = mobileGame ? computeMobileViewLayout(viewRotation) : null;
+  const canvasKey = mobileCanvasKey(viewRotation, mobileGame);
   useMobileInputGuard(mobileGame);
+
+  useEffect(() => {
+    if (!mobileGame) return;
+    const bump = () => setViewportTick((n) => n + 1);
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', bump);
+    window.addEventListener('resize', bump);
+    return () => {
+      vv?.removeEventListener('resize', bump);
+      window.removeEventListener('resize', bump);
+    };
+  }, [mobileGame]);
+  void viewportTick;
 
   useEffect(() => {
     document.title = GAME_TITLE;
@@ -129,12 +142,8 @@ export default function App() {
     },
   ];
 
-  return (
-    <div
-      className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}${mobileGame ? ' mobile-game' : ''}${
-        mobilePortrait ? ' mobile-portrait' : ''
-      }`}
-    >
+  const body = (
+    <>
       {showRef && isLowPoly && (
         <div className="frame ref">
           <img src={REFERENCE_PHOTO.url} alt="参考照片" />
@@ -144,18 +153,17 @@ export default function App() {
 
       <div className={`frame${isGame ? ' wide' : ''}${mobileGame ? ' mobile-frame' : ''}`}>
         {mobileGame ? (
-          <MobileForceLandscape active={mobilePortrait}>
-            <MobileGameFrame enabled>
-              <ModeCanvas
-                mode={mode}
-                autoRotate={autoRotate}
-                controlsRef={controlsRef}
-                canvasKey={mobileCanvasKey}
-              />
-              {isGame && <GameLoadingOverlay />}
-              {isGame && <GameHud mobileActive />}
-            </MobileGameFrame>
-          </MobileForceLandscape>
+          <MobileGameFrame enabled>
+            <ModeCanvas
+              mode={mode}
+              autoRotate={autoRotate}
+              controlsRef={controlsRef}
+              canvasKey={canvasKey}
+              mobileLayoutSync
+            />
+            {isGame && <GameLoadingOverlay />}
+            {isGame && <GameHud mobileActive />}
+          </MobileGameFrame>
         ) : (
           <>
             <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
@@ -178,6 +186,17 @@ export default function App() {
         <ControlPanel items={panelItems} />
         <div className="hint">{cfg.hint}</div>
       </div>
+    </>
+  );
+
+  return (
+    <div className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}${mobileGame ? ' mobile-game' : ''}`}>
+      {mobileGame && (
+        <MobileRotateFab onRotate={() => setViewRotation((d) => (d + 90) % 360)} />
+      )}
+      <MobileViewRotator enabled={mobileGame} layout={mobileViewLayout}>
+        {body}
+      </MobileViewRotator>
     </div>
   );
 }

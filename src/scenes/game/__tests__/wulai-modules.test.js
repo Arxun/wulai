@@ -18,6 +18,7 @@ import { guardFrame, logWulaiBootChecks } from '../debug/reportError';
 import { markSkillFxWarmupRoot } from '../debug/warmupShaders';
 import {
   beginGameLoad,
+  completeGameLoadWarmup,
   getGameLoadingState,
   resetGameLoad,
   updateGameLoadAssets,
@@ -215,6 +216,9 @@ describe('诊断 debug/（自检）', () => {
     expect(getGameLoadingState().phase).toBe('loading');
     updateGameLoadAssets({ active: false, progress: 100, loaded: 2, total: 2 });
     expect(getGameLoadingState().progress).toBe(100);
+    expect(getGameLoadingState().assetsReady).toBe(true);
+    completeGameLoadWarmup();
+    expect(getGameLoadingState().warmupDone).toBe(true);
     resetGameLoad();
     expect(getGameLoadingState().phase).toBe('hidden');
   });

@@ -14,6 +14,7 @@ import {
 import { moveAxis, useKeyboard } from '../../../lib/hooks/useKeyboard';
 import { mobileLayout } from '../mobile/mobileLayoutStore';
 import { mobileView } from '../mobile/mobileViewStore';
+import { pointerDeltaForView } from '../mobile/viewRotationCoords';
 import Person from '../../lowpoly/person/index';
 import { LOCO_RIG } from '../../lowpoly/person/rigs';
 import { ULT_SKILL_NAME } from '../../../config/lore';
@@ -116,6 +117,19 @@ const MAX_CADENCE = 3.4;
 /** 人物身高（米）。蓄满跳 = 5 倍身高 */
 const PERSON_H = 1.78;
 const JUMP_CHARGE_TIME = 2;
+/** 武来：镜头拉远倍率（相对进招前距离），便于框住 8 倍金身法相 */
+const WULAI_CAM_ZOOM = 2.65;
+const WULAI_CAM_DIST_MAX = 26;
+const WULAI_CAM_FOV_EXTRA = 14;
+
+/** @param {number} sec 武来时间轴 0~3s */
+function wulaiCamPull(sec) {
+  if (sec < 0.85) return smoothstep(sec, 0.2, 0.85) * 0.22;
+  if (sec < 1.35) return 0.22 + smoothstep(sec, 0.85, 1.35) * 0.78;
+  if (sec < 2.45) return 1;
+  return 1 - smoothstep(sec, 2.45, 3);
+}
+
 const JUMP_H_MIN = 1.15;
 const JUMP_H_MAX = PERSON_H * 5;
 const JUMP_GRAVITY = 26;
@@ -254,6 +268,10 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     skillFlashed: false,
     lunged: false,
     knock: new THREE.Vector3(),
+    wulaiCamRestore: false,
+    wulaiSavedDist: 5.2,
+    wulaiSavedMult: 1,
+    wulaiEffDist: 5.2,
     };
     if (START_IN_SU7) {
       enterSu7(sRef.current);
@@ -291,13 +309,9 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     };
     const move = (e) => {
       if (!s.dragging) return;
-      if (mobileLayout.portraitWide) {
-        s.camYaw -= e.movementY * 0.005;
-        s.camPitch = clamp(s.camPitch - e.movementX * 0.004, -0.25, 1.15);
-      } else {
-        s.camYaw -= e.movementX * 0.005;
-        s.camPitch = clamp(s.camPitch + e.movementY * 0.004, -0.25, 1.15);
-      }
+      const { dx, dy } = pointerDeltaForView(e.movementX, e.movementY, mobileLayout.viewRotation);
+      s.camYaw -= dx * 0.005;
+      s.camPitch = clamp(s.camPitch + dy * 0.004, -0.25, 1.15);
     };
     const wheel = (e) => {
       e.preventDefault();
@@ -735,23 +749,42 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     const boostK = smoothstep(drift.boost, 0, 0.35);
     let skillZoom = 0;
     let skillFov = 0;
+    let effCamDist = clamp(s.camDist * mobileView.camDistMult, 2.8, 18);
+
     if (world.move === 'wulai') {
-      const sec = moveProgress(world) * 3;
-      if (sec < 0.4) {
-        skillZoom = 0.18;
-        skillFov = 6;
-      } else if (sec < 1.6) {
-        skillZoom = 0.28 + (sec - 0.4) * 0.12;
-        skillFov = 4;
-      } else if (sec < 2.4) {
-        skillZoom = 0.42;
-        skillFov = 10;
-      } else {
-        const fade = 1 - (sec - 2.4) / 0.6;
-        skillZoom = 0.42 * fade;
-        skillFov = 10 * fade;
+      if (!s.wulaiCamRestore) {
+        s.wulaiSavedDist = effCamDist;
+        s.wulaiSavedMult = mobileView.camDistMult;
+        s.wulaiEffDist = s.wulaiSavedDist;
+        s.wulaiCamRestore = true;
       }
-    } else if (world.heavy > 0) {
+      const sec = moveProgress(world) * 3;
+      const pull = wulaiCamPull(sec);
+      const distTarget = clamp(s.wulaiSavedDist * (1 + WULAI_CAM_ZOOM * pull), 2.8, WULAI_CAM_DIST_MAX);
+      s.wulaiEffDist = lerp(s.wulaiEffDist, distTarget, 1 - Math.exp(-5.5 * dt));
+      effCamDist = s.wulaiEffDist;
+      skillFov = WULAI_CAM_FOV_EXTRA * pull;
+      if (pull > 0.08) {
+        const frameK = smoothstep(pull, 0.08, 1);
+        const back = frameK * 5.2;
+        const lift = frameK * 3.8;
+        tmp.target.x += Math.sin(s.yaw) * back;
+        tmp.target.z += Math.cos(s.yaw) * back;
+        tmp.target.y += lift;
+      }
+    } else if (s.wulaiCamRestore) {
+      s.wulaiEffDist = lerp(s.wulaiEffDist, s.wulaiSavedDist, 1 - Math.exp(-9 * dt));
+      effCamDist = s.wulaiEffDist;
+      skillFov = WULAI_CAM_FOV_EXTRA * clamp(Math.abs(s.wulaiEffDist - s.wulaiSavedDist) / 2.8, 0, 1);
+      if (Math.abs(s.wulaiEffDist - s.wulaiSavedDist) < 0.12) {
+        s.wulaiCamRestore = false;
+        s.camDist = clamp(s.wulaiSavedDist / Math.max(s.wulaiSavedMult, 1e-4), 2.8, 18);
+        mobileView.camDistMult = s.wulaiSavedMult;
+        effCamDist = clamp(s.camDist * mobileView.camDistMult, 2.8, 18);
+      }
+    }
+
+    if (world.move !== 'wulai' && world.heavy > 0) {
       const ht = 1 - world.heavy / HEAVY_TIME;
       if (ht < 0.42) {
         const c = ht / 0.42;
@@ -770,7 +803,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
       .set(Math.sin(s.camYaw) * cp, Math.sin(s.camPitch), Math.cos(s.camYaw) * cp)
       // 跑得快 / 喷氮气时镜头拉远，速度感更强
       .multiplyScalar(
-        clamp(s.camDist * mobileView.camDistMult, 2.8, 18) *
+        effCamDist *
           (1 +
             0.12 * s.runMix +
             0.22 * boostK +

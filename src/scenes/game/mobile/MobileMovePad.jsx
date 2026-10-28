@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { mobileKeys, setMobileKey } from './mobileInputStore';
 import { mobileLayout } from './mobileLayoutStore';
-import { discDeltaFromClient } from './portraitCoords';
+import { discDeltaFromClient } from './viewRotationCoords';
 
 const SECTORS = {
   up: 'ArrowUp',
@@ -50,9 +50,9 @@ export default function MobileMovePad() {
   const localPoint = (e) => {
     const el = discRef.current;
     if (!el) return { dx: 0, dy: 0 };
-    const root = el.closest('.mobile-portrait-wide-root');
-    if (mobileLayout.portraitWide && root) {
-      return discDeltaFromClient(root, el, e.clientX, e.clientY);
+    const root = el.closest('.mobile-view-rotator');
+    if (mobileLayout.viewRotation && root) {
+      return discDeltaFromClient(root, el, e.clientX, e.clientY, mobileLayout.viewRotation);
     }
     const r = el.getBoundingClientRect();
     const cx = r.left + r.width / 2;

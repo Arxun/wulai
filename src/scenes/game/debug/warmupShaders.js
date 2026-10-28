@@ -11,6 +11,14 @@ export function markSkillFxWarmupRoot(object3d) {
   if (object3d) object3d.userData.wulaiSkillFxWarmup = true;
 }
 
+export function countSkillFxWarmupRoots(scene) {
+  let n = 0;
+  scene.traverse((o) => {
+    if (o.userData?.wulaiSkillFxWarmup) n += 1;
+  });
+  return n;
+}
+
 function collectWarmupRoots(scene) {
   const roots = [];
   scene.traverse((o) => {
@@ -60,19 +68,24 @@ function restoreSnapshot(entries) {
  * @param {THREE.Scene} scene
  * @param {THREE.Camera} camera
  */
-export async function warmupSkillFxShaders(gl, scene, camera) {
+export async function warmupSkillFxShaders(gl, scene, camera, { fullScene = false } = {}) {
   const roots = collectWarmupRoots(scene);
-  if (!roots.length) return 0;
-
-  const entries = snapshotForWarmup(roots);
+  const entries = roots.length ? snapshotForWarmup(roots) : [];
   try {
-    if (typeof gl.compileAsync === 'function') {
+    if (roots.length) {
+      if (typeof gl.compileAsync === 'function') {
+        await gl.compileAsync(scene, camera);
+      } else {
+        gl.compile(scene, camera);
+      }
+    }
+    if (fullScene && typeof gl.compileAsync === 'function') {
       await gl.compileAsync(scene, camera);
-    } else {
+    } else if (fullScene) {
       gl.compile(scene, camera);
     }
   } finally {
-    restoreSnapshot(entries);
+    if (entries.length) restoreSnapshot(entries);
   }
   return roots.length;
 }

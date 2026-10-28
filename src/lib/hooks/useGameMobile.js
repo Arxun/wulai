@@ -9,35 +9,23 @@ function detectMobile() {
   return coarse || (narrow && ua) || (narrow && coarse);
 }
 
-function detectLandscape() {
-  if (typeof window === 'undefined') return true;
-  return window.innerWidth > window.innerHeight;
-}
-
 /**
- * @returns {{ active: boolean, landscape: boolean }}
+ * @returns {{ active: boolean }}
  */
 export function useGameMobile() {
-  const [state, setState] = useState(() => ({
-    active: detectMobile(),
-    landscape: detectLandscape(),
-  }));
+  const [active, setActive] = useState(() => detectMobile());
 
   useEffect(() => {
-    const update = () => {
-      setState({ active: detectMobile(), landscape: detectLandscape() });
-    };
+    const update = () => setActive(detectMobile());
     update();
     window.addEventListener('resize', update);
-    window.addEventListener('orientationchange', update);
     const mq = window.matchMedia('(pointer: coarse)');
     mq.addEventListener?.('change', update);
     return () => {
       window.removeEventListener('resize', update);
-      window.removeEventListener('orientationchange', update);
       mq.removeEventListener?.('change', update);
     };
   }, []);
 
-  return state;
+  return { active };
 }

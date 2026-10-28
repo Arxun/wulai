@@ -5,7 +5,7 @@ import { getGameLoadingState, subscribeGameLoading } from './stores/gameLoadingS
  * 武来进图遮罩：资源加载 + 淡出过渡（DOM，盖在 Canvas 上）
  */
 export default function GameLoadingOverlay() {
-  const { show, phase, progress, assetsActive, loaded, total } = useSyncExternalStore(
+  const { show, phase, progress, assetsActive, loaded, total, statusHint } = useSyncExternalStore(
     subscribeGameLoading,
     getGameLoadingState,
   );
@@ -15,11 +15,12 @@ export default function GameLoadingOverlay() {
   const leaving = phase === 'enter' || phase === 'hidden';
   const label = phase === 'enter' ? '进入黄山…' : '资源正在加载…';
   const sub =
-    total > 0 && phase === 'loading'
+    statusHint ||
+    (total > 0 && phase === 'loading'
       ? `(${loaded}/${total})`
       : assetsActive
         ? ''
-        : '准备场景';
+        : '准备场景');
 
   return (
     <div className={`game-load${leaving ? ' game-load--leave' : ''}`} aria-live="polite" aria-busy={!leaving}>
