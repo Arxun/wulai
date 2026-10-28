@@ -1,7 +1,7 @@
 # 构建武来并发布到 https://arxun.github.io/wulai/
 #
 # 在 wulai 仓库 Settings → Secrets → Actions 添加：
-#   GH_PAGES_TOKEN — 对 Arxun/arxun.github.io 有 contents:write 的 PAT（classic 或 fine-grained）
+#   GH_PAGES_TOKEN（推荐）或 WULAI — 对 Arxun/arxun.github.io 有 contents:write 的 PAT
 #
 # push main 或手动 workflow_dispatch 会触发；推送 arxun.github.io 的 main 后会自动跑 Pages 部署。
 name: Deploy to arxun.github.io/wulai
@@ -32,10 +32,10 @@ jobs:
 
       - name: Publish to arxun.github.io
         env:
-          PAGES_TOKEN: ${{ secrets.GH_PAGES_TOKEN }}
+          PAGES_TOKEN: ${{ secrets.GH_PAGES_TOKEN || secrets.WULAI }}
         run: |
           if [ -z "$PAGES_TOKEN" ]; then
-            echo "::error::Missing secret GH_PAGES_TOKEN (PAT with write access to Arxun/arxun.github.io)"
+            echo "::error::Missing repository secret GH_PAGES_TOKEN (or WULAI): PAT with Contents write on Arxun/arxun.github.io"
             exit 1
           fi
           touch dist/.nojekyll
