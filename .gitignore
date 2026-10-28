@@ -1,0 +1,13 @@
+node_modules
+dist
+dist.zip
+.restore-snapshot
+
+# image-to-3d 工具：本地依赖 / 权重 / 中间产物
+tools/image-to-3d/venv
+tools/image-to-3d/pylib
+tools/image-to-3d/out
+tools/image-to-3d/weights/*.ckpt
+tools/image-to-3d/weights/*.safetensors
+tools/image-to-3d/__pycache__
+**/__pycache__

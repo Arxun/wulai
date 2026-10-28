@@ -1,0 +1,28 @@
+{
+  "name": "wulai",
+  "description": "武来 — 主角小武，大招武来",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "model:relief": "cd tools/image-to-3d && ./run.sh generate --backend relief --image ../../public/reference.jpg --mask ../../public/photo3d/person-mask.png --depth ../../public/photo3d/depth.png --out-dir ../../public/models --name person --preview-dir out",
+    "model:triposr": "cd tools/image-to-3d && ./run.sh generate --backend triposr --image ../../public/reference.jpg --mask ../../public/photo3d/person-mask.png --out-dir ../../public/models --name person --resolution 256 --preview-dir out --debug-dir out"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.109.0",
+    "@react-three/fiber": "^8.17.0",
+    "@react-three/postprocessing": "^2.19.1",
+    "n8ao": "^1.10.3",
+    "postprocessing": "^6.36.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.168.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  }
+}

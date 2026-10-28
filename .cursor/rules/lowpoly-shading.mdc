@@ -1,0 +1,45 @@
+---
+description: 低多边形场景的几何与着色约定：放样坐标系、平滑法线用在哪、程序化贴图
+globs: src/lib/**,src/scenes/**
+alwaysApply: false
+---
+
+# 几何与着色约定
+
+## 平滑着色 vs 硬面
+
+这是整个项目的风格底线：**有机形体用平滑法线，人造物和植被保持逐面硬法线。**
+
+- 皮肤、五官、手 → `makeLoftGeometry({ smooth: true })` + `<FacetMesh smooth />`
+- 衣服、头发、岩石、树、地形 → 默认的 `flatShading`（不传 `smooth`）
+
+`smoothNormals()`（`lib/geometry/normals.js`）按顶点位置焊接非索引几何体的面法线，
+带折痕阈值（默认 75°）：夹角超过阈值的面保留自己的硬法线，所以鼻翼、耳轮、指甲不会被抹平。
+需要更锐的边就传 `smooth: { crease: 60 }`。
+
+```js
+// 皮肤：平滑 + 极低 faceTint
+makeLoftGeometry({ keys, samples: 46, segments: 56, smooth: true, faceTint: 0.008 })
+// 衣服：硬面 + 明显的 faceTint 做手绘色块感
+makeLoftGeometry({ keys, samples: 7, segments: 9, faceTint: 0.045 })
+```
+
+## 放样坐标系（`lib/geometry/loft.js`）
+
+截面局部系 `u = T × ref`、`v = u × T`，θ 从 u 转向 v。
+
+- `ref` 默认 `[0,0,1]`：竖直路径下 **a = 左右半宽，b = 前后半厚**，θ=0 在 +X、θ=π/2 在正前方。
+- 路径横着走时必须换 `ref`（如手指、嘴唇用 `ref:[0,1,0]`），换完要重新推一遍 θ 指向哪，
+  profile / color 里的角度判断很容易因此写反。
+
+形体细节优先走 `profile(t, θ)`，而不是堆小球——放样出来的面是连续的，堆球会留下接缝。
+
+## 程序化贴图（`lib/textures/procedural.js`）
+
+全部用 canvas 现场生成，不依赖图片文件。贴图与顶点色相乘：顶点色决定色块，贴图只给细节。
+几何体的 `uvMeters` 决定一张贴图覆盖多少米，**它直接等于纹理的物理尺度**：
+
+- 皮肤 0.06~0.09（再大毛孔就变成斑块）
+- 布料 0.05~0.07
+
+加新材质就往 `SHADERS` 里加一个亮度函数，`map` 和 `bump` 共用它，保证纹理和凹凸对齐。

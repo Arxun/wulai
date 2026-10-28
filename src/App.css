@@ -1,0 +1,684 @@
+.page {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #1b1f24;
+}
+
+/* 与参考照片同比例（576×1024 = 9:16），保证叠加时能一一对齐 */
+.frame {
+  position: relative;
+  height: 100vh;
+  aspect-ratio: 9 / 16;
+  max-width: 100vw;
+  overflow: hidden;
+  background: #d9e1e6;
+}
+
+/* 游戏模式：铺满窗口，不用对齐参考照片的竖构图 */
+.frame.wide {
+  width: 100vw;
+  height: 100vh;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: auto;
+  cursor: grab;
+}
+
+/* R3F 画布随窗口缩放，避免拖拽改变大小时高度塌成 0 */
+.frame canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.frame.wide:active {
+  cursor: grabbing;
+}
+
+.frame.ref img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.panel {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(20, 24, 30, 0.62);
+  color: #fff;
+  font-size: 12px;
+  backdrop-filter: blur(6px);
+}
+
+.panel label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel input[type='range'] {
+  width: 90px;
+}
+
+.panel button {
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.panel button:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+/* 窄屏（手机）下只保留 3D 画面 */
+@media (max-width: 900px) {
+  .frame.ref {
+    display: none;
+  }
+}
+
+/* ?ui=0 时隐藏所有界面元素，方便截图对比 */
+.noui .panel,
+.noui .hint,
+.noui .tag,
+.noui .hud,
+.noui .chud,
+.noui .hurtflash,
+.noui .skillflash,
+.noui .wulai-title {
+  display: none;
+}
+
+.panel-group {
+  display: flex;
+  gap: 4px;
+  margin-right: 4px;
+}
+
+/* ---- 游戏模式右上角：漂移 / 氮气 ---- */
+.hud {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 182px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(14, 18, 24, 0.58);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.hud.boosting {
+  border-color: rgba(255, 150, 60, 0.9);
+  box-shadow: 0 0 18px rgba(255, 130, 40, 0.55);
+}
+
+.hud-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.hud-label {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+}
+
+.hud-value {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* 正在漂移时数字变色，眼角余光也能看见在涨 */
+.hud-value.live {
+  color: #ffd166;
+  text-shadow: 0 0 10px rgba(255, 190, 70, 0.6);
+}
+
+.hud-bar {
+  height: 5px;
+  margin: 6px 0 8px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.hud-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #6fd2ff, #b98bff);
+  transition: width 0.1s linear;
+}
+
+.hud-bar.jump i {
+  background: linear-gradient(90deg, #ffd166, #ff8a3c);
+}
+
+.hud-tanks {
+  display: flex;
+  gap: 4px;
+}
+
+.hud-tanks b {
+  width: 22px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.hud-tanks b.on {
+  background: #7ee0ff;
+  border-color: #7ee0ff;
+  box-shadow: 0 0 10px rgba(110, 215, 255, 0.8);
+}
+
+.hud-flash {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #ffd166;
+}
+
+.hud-flash.boost {
+  color: #ff9a4d;
+}
+
+.hud-flash.interact {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(12, 18, 28, 0.72);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* 屏幕四周的放射状疾风线：锥形渐变切出一圈细线，再用径向遮罩只留边缘，
+   中间（人物所在处）始终干净。整个效果不碰 WebGL，纯合成层。 */
+.speedlines {
+  position: absolute;
+  inset: -18%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s linear;
+  mix-blend-mode: screen;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255, 255, 255, 0) 0deg 0.55deg,
+    rgba(255, 255, 255, 0.95) 0.55deg 0.82deg,
+    rgba(255, 255, 255, 0) 0.82deg 2.4deg
+  );
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 36%, #000 70%, #000 100%);
+  mask-image: radial-gradient(circle at 50% 50%, transparent 36%, #000 70%, #000 100%);
+}
+
+.speedlines.fine {
+  inset: -22%;
+  background: repeating-conic-gradient(
+    from 0.4deg at 50% 50%,
+    rgba(190, 230, 255, 0) 0deg 1.1deg,
+    rgba(190, 230, 255, 0.7) 1.1deg 1.28deg,
+    rgba(190, 230, 255, 0) 1.28deg 3.6deg
+  );
+}
+
+.speedlines.on {
+  opacity: 0.88;
+  animation: speedlines-rush 0.32s linear infinite;
+}
+
+.speedlines.fine.on {
+  opacity: 0.55;
+  animation-duration: 0.48s;
+  animation-direction: reverse;
+}
+
+/* 线条整体往外涨：边缘向后扯动的疾风感 */
+@keyframes speedlines-rush {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.42);
+  }
+}
+
+.panel button.active {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: #fff;
+}
+
+/* 被打时四周压一层红，打击感 */
+.hurtflash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 55%, transparent 42%, rgba(160, 12, 8, 0.5) 100%);
+  transition: opacity 0.08s linear;
+}
+
+.hurtflash.on {
+  opacity: 1;
+}
+
+.skillflash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 58%, rgba(255, 214, 90, 0.34), transparent 52%);
+  transition: opacity 0.06s linear;
+}
+
+.skillflash.on {
+  opacity: 1;
+}
+
+/* ---- 大招开场标题：武来 ---- */
+.wulai-title {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.2vw;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.wulai-glyph {
+  font-size: min(18vw, 20vh);
+  font-weight: 900;
+  line-height: 0.86;
+  letter-spacing: 0.04em;
+  color: transparent;
+  background: linear-gradient(180deg, #fff6c4 0%, #ffd056 28%, #ff5a1e 62%, #7a1208 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter:
+    drop-shadow(0 0 10px rgba(255, 168, 40, 0.95))
+    drop-shadow(0 0 28px rgba(255, 90, 20, 0.65))
+    drop-shadow(0 8px 0 rgba(80, 12, 4, 0.35));
+  text-shadow: none;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.wulai-flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 48%, #fff8dc 0%, rgba(255, 220, 120, 0.55) 28%, transparent 62%);
+}
+
+.wulai-bits {
+  position: absolute;
+  inset: 18% 10%;
+  pointer-events: none;
+}
+
+.wulai-bits i {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #ffd056;
+  box-shadow: 0 0 10px #ff9a3c;
+  opacity: 0.85;
+  left: calc(8% + (var(--i) * 5.1%));
+  top: calc(12% + (var(--i) * 3.7%));
+  transform: rotate(28deg) scale(0.7);
+}
+
+.wulai-bits i:nth-child(odd) {
+  width: 18px;
+  height: 4px;
+  background: #fff3c0;
+  top: calc(30% + (var(--i) * 2.4%));
+}
+
+/* ---- 游戏模式左上角：头像 / 血蓝 / 等级 ---- */
+.chud {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.chud.hit .av {
+  box-shadow: 0 0 0 2px #ff5a3a;
+}
+
+.chud.down {
+  opacity: 0.55;
+}
+
+.av {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.32);
+  background: linear-gradient(#4a5a68 0 40%, #c43a2a 40% 100%);
+}
+
+.av i {
+  position: absolute;
+  display: block;
+}
+
+.av-hair {
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 16px;
+  background: #1a1410;
+  border-radius: 0 0 46% 46%;
+}
+
+.av-face {
+  top: 13px;
+  left: 13px;
+  right: 13px;
+  height: 20px;
+  background: #d4a07a;
+  border-radius: 8px;
+}
+
+.av-glass {
+  top: 18px;
+  left: 15px;
+  width: 13px;
+  height: 8px;
+  background: #141418;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px #c9a24a;
+}
+
+.av-glass-r {
+  left: auto;
+  right: 15px;
+}
+
+.av-bridge {
+  top: 21px;
+  left: 28px;
+  width: 6px;
+  height: 2px;
+  background: #c9a24a;
+}
+
+.av-collar {
+  bottom: 6px;
+  left: 8px;
+  right: 8px;
+  height: 10px;
+  background: #8a241c;
+  border-radius: 4px 4px 0 0;
+}
+
+.chud-main {
+  width: 196px;
+  padding: 8px 10px 7px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(14, 18, 24, 0.58);
+  backdrop-filter: blur(6px);
+}
+
+.chud-name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.chud-name span {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+}
+
+.chud-bar {
+  position: relative;
+  height: 9px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.chud-bar i {
+  display: block;
+  height: 100%;
+  transition: width 0.1s linear;
+}
+
+.chud-bar.hp i {
+  background: linear-gradient(90deg, #c62828, #ef5350);
+}
+
+.chud-bar.mp i {
+  background: linear-gradient(90deg, #1565c0, #42a5f5);
+}
+
+.chud-bar.xp {
+  height: 4px;
+  margin-top: 2px;
+}
+
+.chud-bar.xp i {
+  background: linear-gradient(90deg, #f6c445, #ffe08a);
+}
+
+.chud-bar em {
+  position: absolute;
+  inset: 0;
+  font-size: 9px;
+  font-style: normal;
+  line-height: 9px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.chud-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 5px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+}
+
+.chud-wep {
+  margin-left: auto;
+  color: #ffd166;
+}
+
+.chud-atk {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+}
+
+.chud-atk em {
+  font-style: normal;
+}
+
+.chud-move {
+  margin-top: 4px;
+  color: #ffd166;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chud-combo {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+}
+
+.chud-combo i {
+  font-style: normal;
+}
+
+.chud-combo i.next {
+  color: #ffd166;
+}
+
+.chud-toast {
+  position: absolute;
+  left: 76px;
+  top: 118px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(14, 18, 24, 0.72);
+  color: #ffe08a;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.chud-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chud-bag {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.chud-bag b {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(14, 18, 24, 0.45);
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  cursor: default;
+}
+
+.chud-bag b.own {
+  color: #fff;
+  cursor: pointer;
+}
+
+.chud-bag b.on {
+  border-color: #ffd166;
+  background: rgba(255, 209, 102, 0.22);
+  box-shadow: 0 0 8px rgba(255, 209, 102, 0.35);
+}
+
+.chud-pots {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.chud-pots b {
+  min-width: 36px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(14, 18, 24, 0.45);
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.chud-pots b.own {
+  color: #fff;
+  cursor: pointer;
+}
+
+.chud-pots b.hp.own {
+  border-color: rgba(239, 83, 80, 0.7);
+  background: rgba(198, 40, 40, 0.35);
+}
+
+.chud-pots b.mp.own {
+  border-color: rgba(66, 165, 245, 0.7);
+  background: rgba(21, 101, 192, 0.35);
+}
