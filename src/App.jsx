@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ControlPanel from './lib/components/ControlPanel';
 import { urlParam } from './lib/hooks/useUrlParams';
 import { REFERENCE_PHOTO } from './config/assets';
@@ -12,7 +12,7 @@ import GameLoadingOverlay from './scenes/game/GameLoadingOverlay';
 import GameScene from './scenes/game';
 import { beginGameLoad, resetGameLoad } from './scenes/game/stores/gameLoadingStore';
 import LowPolyScene from './scenes/lowpoly/LowPolyScene';
-import { GAME_PERF } from './scenes/game/config/perf';
+import { getGamePerf, setGamePerfMobile } from './scenes/game/config/perf';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
 import MobileCanvasResize from './scenes/game/mobile/MobileCanvasResize';
@@ -26,13 +26,14 @@ import './App.css';
 function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal', mobileLayoutSync = false }) {
   const cfg = MODES[mode];
   const isGame = mode === 'game';
+  const perf = isGame ? getGamePerf() : null;
   return (
     <Canvas
       key={isGame ? `${mode}-${canvasKey}` : mode}
       shadows={mode === 'lowpoly' || isGame}
-      dpr={isGame ? GAME_PERF.dpr : [1, 2]}
+      dpr={isGame ? perf.dpr : [1, 2]}
       camera={cfg.camera}
-      gl={{ antialias: true, preserveDrawingBuffer: !isGame }}
+      gl={{ antialias: isGame ? !mobileLayoutSync : true, preserveDrawingBuffer: !isGame }}
       resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
       style={{ display: 'block', width: '100%', height: '100%' }}
     >
@@ -79,6 +80,10 @@ export default function App() {
   const mobileViewLayout = mobileGame ? computeMobileViewLayout(viewRotation) : null;
   const canvasKey = mobileCanvasKey(viewRotation, mobileGame);
   useMobileInputGuard(mobileGame);
+
+  useLayoutEffect(() => {
+    setGamePerfMobile(mobileGame);
+  }, [mobileGame]);
 
   useEffect(() => {
     if (!mobileGame) return;

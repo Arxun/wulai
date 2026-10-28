@@ -23,8 +23,8 @@ export function computeMobileViewLayout(rotationDeg = 0) {
   return { vw, vh, w, h, swap, transform, rotationDeg };
 }
 
+/** 仅随旋转 remount；尺寸由 MobileCanvasResize + setSize 同步（避免地址栏 resize 反复重建 WebGL） */
 export function mobileCanvasKey(rotationDeg, enabled) {
   if (!enabled) return 'normal';
-  const { w, h } = computeMobileViewLayout(rotationDeg);
-  return `${rotationDeg}-${w}x${h}`;
+  return `r${rotationDeg}`;
 }

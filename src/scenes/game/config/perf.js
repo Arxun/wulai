@@ -16,8 +16,39 @@ export const GAME_PERF = {
   skillWarmupAfterFrames: 2,
   /** 找不到 FX 根节点时最多再等多少帧 */
   skillWarmupMaxFrames: 300,
-  /** 遮罩上等待预热的兜底超时（毫秒） */
+  /** 遮罩上等待预热的兜底超时（毫秒，仅 gateLoadingOnSkillWarmup 时生效） */
   skillWarmupTimeoutMs: 12000,
-  /** 预热阶段是否顺带 compile 整场景（移动端首技能更稳，略增进图时间） */
-  skillWarmupFullScene: true,
+  /** true：资源 100% 后仍等预热结束才进图（移动端会明显变慢） */
+  gateLoadingOnSkillWarmup: false,
+  /** 预热是否 compile 整场景（true 更重；进图后后台预热时仍建议 false） */
+  skillWarmupFullScene: false,
+  /** 移动端：进图稳定后再预热（帧），避免与首帧抢 GPU */
+  skillWarmupAfterFramesMobile: 90,
+  /** 移动端：requestIdleCallback 最长等待（毫秒） */
+  skillWarmupIdleTimeoutMs: 4000,
 };
+
+const MOBILE_OVERRIDES = {
+  dpr: [1, 1],
+  shadowMapSize: 512,
+  terrainSegments: 120,
+  environmentResolution: 32,
+  grassClusterCount: 520,
+};
+
+let mobileGameActive = false;
+
+/** App 在移动端游戏布局切换时同步（Canvas 内场景读 getGamePerf） */
+export function setGamePerfMobile(active) {
+  mobileGameActive = !!active;
+}
+
+export function isGamePerfMobile() {
+  return mobileGameActive;
+}
+
+/** @returns {typeof GAME_PERF} */
+export function getGamePerf() {
+  if (!mobileGameActive) return GAME_PERF;
+  return { ...GAME_PERF, ...MOBILE_OVERRIDES };
+}

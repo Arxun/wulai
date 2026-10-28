@@ -72,17 +72,12 @@ export async function warmupSkillFxShaders(gl, scene, camera, { fullScene = fals
   const roots = collectWarmupRoots(scene);
   const entries = roots.length ? snapshotForWarmup(roots) : [];
   try {
-    if (roots.length) {
+    if (roots.length || fullScene) {
       if (typeof gl.compileAsync === 'function') {
         await gl.compileAsync(scene, camera);
       } else {
         gl.compile(scene, camera);
       }
-    }
-    if (fullScene && typeof gl.compileAsync === 'function') {
-      await gl.compileAsync(scene, camera);
-    } else if (fullScene) {
-      gl.compile(scene, camera);
     }
   } finally {
     if (entries.length) restoreSnapshot(entries);

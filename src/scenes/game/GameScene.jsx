@@ -1,6 +1,6 @@
 import { Suspense, memo, useRef } from 'react';
 import SkyDome from '../../lib/components/SkyDome';
-import { GAME_PERF } from './config/perf';
+import { getGamePerf } from './config/perf';
 import GameEnvironment from './GameEnvironment';
 import FloatTexts from './FloatTexts';
 import Loot from './Loot';
@@ -20,7 +20,7 @@ function GameSceneInner() {
   const skidRef = useRef();
   const lineRef = useRef();
   const { sky, fog } = MAP_ENV;
-  const sm = GAME_PERF.shadowMapSize;
+  const sm = getGamePerf().shadowMapSize;
 
   return (
     <>

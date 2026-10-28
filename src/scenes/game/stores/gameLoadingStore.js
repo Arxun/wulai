@@ -96,9 +96,14 @@ export function updateGameLoadAssets({ active, progress, loaded, total }) {
   };
   emit();
   if (!active && progress >= 100) {
-    state = { ...state, assetsReady: true };
+    const skipWarmupGate = !GAME_PERF.gateLoadingOnSkillWarmup;
+    state = {
+      ...state,
+      assetsReady: true,
+      ...(skipWarmupGate ? { warmupDone: true, statusHint: '' } : {}),
+    };
     emit();
-    armWarmupFallback();
+    if (GAME_PERF.gateLoadingOnSkillWarmup) armWarmupFallback();
     tryScheduleFinish();
   }
 }
@@ -132,7 +137,8 @@ function armWarmupFallback() {
 
 function tryScheduleFinish() {
   if (state.phase !== 'loading') return;
-  if (!state.assetsReady || !state.warmupDone) return;
+  if (!state.assetsReady) return;
+  if (GAME_PERF.gateLoadingOnSkillWarmup && !state.warmupDone) return;
   scheduleFinish();
 }
 

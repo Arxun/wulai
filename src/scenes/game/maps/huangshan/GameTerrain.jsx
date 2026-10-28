@@ -5,7 +5,7 @@ import { makeMountainRange } from '../../../../lib/geometry/terrain';
 import { applyFaceTint } from '../../../../lib/geometry/vertexColor';
 import { fbm2 } from '../../../../lib/math/noise';
 import { hash3 } from '../../../../lib/math/random';
-import { GAME_PERF } from '../../config/perf';
+import { getGamePerf } from '../../config/perf';
 import { HALF, MAP_SIZE, nearestPath, roadFactor, spawnPadFactor, terrainHeight } from './heightfield';
 
 /**
@@ -14,8 +14,6 @@ import { HALF, MAP_SIZE, nearestPath, roadFactor, spawnPadFactor, terrainHeight 
  * 顶点色按"坡度 / 高程 / 离山路的距离"三件事分：
  *   平地长草、陡坡露岩、高处是裸岩和残雪、路面是压实的土。
  */
-
-const SEG = GAME_PERF.terrainSegments;
 
 const COLORS = {
   grass: new THREE.Color('#5c7246'),
@@ -31,6 +29,7 @@ const COLORS = {
 
 function Ground() {
   const geom = useMemo(() => {
+    const SEG = getGamePerf().terrainSegments;
     const g = new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE, SEG, SEG);
     g.rotateX(-Math.PI / 2);
     const pos = g.attributes.position;

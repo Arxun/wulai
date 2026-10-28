@@ -1,6 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useRef } from 'react';
-import { GAME_PERF } from './config/perf';
+import { getGamePerf, isGamePerfMobile } from './config/perf';
 import { countSkillFxWarmupRoots, warmupSkillFxShaders } from './debug/warmupShaders';
 import {
   completeGameLoadWarmup,
@@ -20,24 +20,36 @@ export default function SkillFxWarmup() {
     if (done.current || running.current) return;
     frames.current += 1;
 
+    const perf = getGamePerf();
     const load = getGameLoadingState();
     const assetsReady = load.assetsReady || (!load.assetsActive && load.progress >= 100);
-    if (frames.current < GAME_PERF.skillWarmupAfterFrames) return;
+    const minFrames = isGamePerfMobile() ? perf.skillWarmupAfterFramesMobile : perf.skillWarmupAfterFrames;
+    if (frames.current < minFrames) return;
     if (!assetsReady && frames.current < 90) return;
 
     const roots = countSkillFxWarmupRoots(scene);
-    if (roots < 4 && frames.current < GAME_PERF.skillWarmupMaxFrames) return;
+    const minRoots = assetsReady ? 1 : 4;
+    if (roots < minRoots && frames.current < perf.skillWarmupMaxFrames) return;
 
     running.current = true;
-    if (!startedHint.current) {
+    if (perf.gateLoadingOnSkillWarmup && !startedHint.current) {
       startedHint.current = true;
       markGameLoadWarmupStarted();
     }
 
     const run = async () => {
+      if (isGamePerfMobile()) {
+        await new Promise((resolve) => {
+          if (typeof requestIdleCallback === 'function') {
+            requestIdleCallback(() => resolve(), { timeout: perf.skillWarmupIdleTimeoutMs });
+          } else {
+            setTimeout(resolve, 1200);
+          }
+        });
+      }
       try {
         const n = await warmupSkillFxShaders(gl, scene, camera, {
-          fullScene: GAME_PERF.skillWarmupFullScene,
+          fullScene: perf.skillWarmupFullScene,
         });
         if (n > 0 && import.meta.env.DEV) {
           console.info('[武来·warmup] 技能着色器已预热', { roots: n });

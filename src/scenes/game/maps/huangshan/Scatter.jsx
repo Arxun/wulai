@@ -4,7 +4,7 @@ import FacetMesh from '../../../../lib/components/FacetMesh';
 import { makeGrassGeometry, makeRockGeometry } from '../../../../lib/geometry/organic';
 import { makeBroadleafGeometry, makeConiferGeometry, makeHuangshanPine } from '../../../../lib/geometry/trees';
 import { mulberry32 } from '../../../../lib/math/random';
-import { GAME_PERF } from '../../config/perf';
+import { getGamePerf } from '../../config/perf';
 import { HALF, SPAWN, nearestPath, slopeAt, spawnPadFactor, terrainHeight } from './heightfield';
 
 /**
@@ -150,7 +150,7 @@ export default function Scatter() {
   // 草丛：贴着地面，一簇簇长在缓坡上
   const grass = useMemo(() => {
     const pts = scatter({
-      count: GAME_PERF.grassClusterCount,
+      count: getGamePerf().grassClusterCount,
       seed: 106,
       maxSlope: 0.4,
       minPath: 1.8,
