@@ -7,7 +7,11 @@ import { activeMap, DEFAULT_MAP_ID, getMapId, MAPS, setMapId } from '../maps/reg
 import { MONSTER_KINDS } from '../monsters/kinds';
 import { VEHICLE_DEFS, DEFAULT_VEHICLE_ID, activeVehicleSpeedMult, vehicle } from '../vehicles';
 import { SU7_VEHICLE } from '../vehicles/su7/def';
-import { setupSu7WheelSpinners, SU7_WHEEL_HALF_TRACK } from '../vehicles/su7/wheels';
+import {
+  setupSu7WheelSpinners,
+  SU7_WHEEL_HALF_TRACK,
+  tickSu7WheelSpin,
+} from '../vehicles/su7/wheels';
 import { guardFrame, logWulaiBootChecks } from '../debug/reportError';
 import { markSkillFxWarmupRoot } from '../debug/warmupShaders';
 import {
@@ -80,6 +84,9 @@ describe('载具模块 vehicles/', () => {
       expect(w.visible).toBe(true);
       expect(Math.abs(w.position.z)).toBe(SU7_WHEEL_HALF_TRACK);
     }
+    const rz0 = spinners[0].rotation.z;
+    tickSu7WheelSpin(spinners, 5, 0.05);
+    expect(spinners[0].rotation.z).not.toBe(rz0);
   });
 
   it('SU7 初始位姿与地图 spawn 一致', () => {

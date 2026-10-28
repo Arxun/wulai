@@ -50,6 +50,7 @@ import {
   world,
 } from '../stores/combatStore';
 import { guardFrame } from '../debug/reportError';
+import { tickSu7WheelSpin } from '../vehicles/su7/wheels';
 import {
   CAR_SIT_POSE,
   START_IN_SU7,
@@ -500,6 +501,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     if (inCar) {
       s.pos.y = ground;
       syncCarFromPlayer(s);
+      tickSu7WheelSpin(vehicle.wheelSpinners, vehicle.driveSpeed, dt);
     } else if (s.air) {
       s.vy -= JUMP_GRAVITY * dt;
       s.pos.y += s.vy * dt;

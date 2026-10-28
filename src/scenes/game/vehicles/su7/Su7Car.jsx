@@ -49,7 +49,13 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
   }, [scene, aoMap, bodyColor]);
 
   useLayoutEffect(() => {
-    wheelParts.current = setupSu7WheelSpinners(scene);
+    const spinners = setupSu7WheelSpinners(scene);
+    wheelParts.current = spinners;
+    vehicle.wheelSpinners = spinners;
+    return () => {
+      vehicle.wheelSpinners = [];
+      wheelParts.current = [];
+    };
   }, [scene]);
 
   useLayoutEffect(() => {
@@ -80,14 +86,7 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
       }
     }
     if (bustWrap.current) bustWrap.current.visible = vehicle.inCar;
-
-    const spin = vehicle.inCar ? vehicle.driveSpeed : 0;
-    const wheels = wheelParts.current;
-    if (spin > 0.015 && wheels.length) {
-      const step = -spin * 0.032 * Math.min(dt, 0.05);
-      for (let i = 0; i < wheels.length; i++) wheels[i].rotateZ(step);
-    }
-  }));
+  }, 1));
 
   return (
     <group ref={carRoot}>

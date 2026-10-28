@@ -42,6 +42,8 @@ export const vehicle = {
   sink: spawn.sink,
   scale: spawn.scale,
   driveSpeed: 0,
+  /** Su7Car 初始化后填入，供 Player 在 sync 之后 tick 轮子 */
+  wheelSpinners: [],
 };
 
 const _tmp = new THREE.Vector3();
