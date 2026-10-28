@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { SU7_CAR } from '../../../../config/assets';
 import DriverBust from '../../../lowpoly/person/DriverBust';
 import { SU7_DRIVER_LOCAL, SU7_MESH_YAW } from './driverSeat';
+import { setupSu7WheelSpinners } from './wheels';
 import { guardFrame } from '../../debug/reportError';
 import { terrainHeight } from '../../maps/huangshan/heightfield';
 import { vehicle } from '../runtime';
@@ -48,11 +49,7 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
   }, [scene, aoMap, bodyColor]);
 
   useLayoutEffect(() => {
-    const parts = [];
-    scene.traverse((obj) => {
-      if (/^Wheel\.\d+$/.test(obj.name)) parts.push(obj);
-    });
-    wheelParts.current = parts;
+    wheelParts.current = setupSu7WheelSpinners(scene);
   }, [scene]);
 
   useLayoutEffect(() => {
@@ -85,9 +82,10 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
     if (bustWrap.current) bustWrap.current.visible = vehicle.inCar;
 
     const spin = vehicle.inCar ? vehicle.driveSpeed : 0;
-    if (spin > 0.02 && wheelParts.current.length) {
+    const wheels = wheelParts.current;
+    if (spin > 0.015 && wheels.length) {
       const step = -spin * 0.032 * Math.min(dt, 0.05);
-      for (const w of wheelParts.current) w.rotateZ(step);
+      for (let i = 0; i < wheels.length; i++) wheels[i].rotateZ(step);
     }
   }));
 

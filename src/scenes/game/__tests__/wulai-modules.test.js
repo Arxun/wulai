@@ -7,6 +7,7 @@ import { activeMap, DEFAULT_MAP_ID, getMapId, MAPS, setMapId } from '../maps/reg
 import { MONSTER_KINDS } from '../monsters/kinds';
 import { VEHICLE_DEFS, DEFAULT_VEHICLE_ID, activeVehicleSpeedMult, vehicle } from '../vehicles';
 import { SU7_VEHICLE } from '../vehicles/su7/def';
+import { setupSu7WheelSpinners, SU7_WHEEL_HALF_TRACK } from '../vehicles/su7/wheels';
 import { guardFrame, logWulaiBootChecks } from '../debug/reportError';
 import { markSkillFxWarmupRoot } from '../debug/warmupShaders';
 import {
@@ -57,6 +58,28 @@ describe('载具模块 vehicles/', () => {
     vehicle.vehicleId = 'su7';
     expect(activeVehicleSpeedMult()).toBe(1.65);
     vehicle.vehicleId = prev;
+  });
+
+  it('setupSu7WheelSpinners 由 2 模板生成 4 个可见轮', () => {
+    const root = new THREE.Group();
+    const hub = new THREE.Group();
+    hub.name = 'Wheel';
+    root.add(hub);
+    const a = new THREE.Group();
+    a.name = 'Wheel.001';
+    a.position.set(1.5, 0.36, 0);
+    const b = new THREE.Group();
+    b.name = 'Wheel.002';
+    b.position.set(-1.5, 0.36, 0);
+    hub.add(a, b);
+    const spinners = setupSu7WheelSpinners(root);
+    expect(spinners).toHaveLength(4);
+    expect(a.visible).toBe(false);
+    expect(b.visible).toBe(false);
+    for (const w of spinners) {
+      expect(w.visible).toBe(true);
+      expect(Math.abs(w.position.z)).toBe(SU7_WHEEL_HALF_TRACK);
+    }
   });
 
   it('SU7 初始位姿与地图 spawn 一致', () => {
