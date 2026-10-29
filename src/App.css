@@ -558,6 +558,41 @@ html.gpu-accel .wulai-bits {
   color: rgba(242, 247, 251, 0.92);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-map__coord {
+  font-size: 0.86em;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+  color: rgba(242, 247, 251, 0.75);
+}
+
+.hud-compass {
+  position: relative;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(14, 18, 24, 0.6);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+.hud-compass__rose {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hud-compass__n {
+  font-size: 8px;
+  font-weight: 700;
+  fill: #ff8a7a;
 }
 
 /* 头像 / 血蓝 / 等级（在地图名下方） */
@@ -583,73 +618,24 @@ html.gpu-accel .wulai-bits {
 
 .av {
   position: relative;
-  width: 62px;
-  height: 62px;
+  width: 54px;
+  height: 54px;
   flex-shrink: 0;
   overflow: hidden;
   border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.32);
-  background: linear-gradient(#4a5a68 0 40%, #c43a2a 40% 100%);
+  border: 2px solid rgba(255, 209, 102, 0.55);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-.av i {
-  position: absolute;
+.av svg {
   display: block;
-}
-
-.av-hair {
-  top: 0;
-  left: 6px;
-  right: 6px;
-  height: 16px;
-  background: #1a1410;
-  border-radius: 0 0 46% 46%;
-}
-
-.av-face {
-  top: 13px;
-  left: 13px;
-  right: 13px;
-  height: 20px;
-  background: #d4a07a;
-  border-radius: 8px;
-}
-
-.av-glass {
-  top: 18px;
-  left: 15px;
-  width: 13px;
-  height: 8px;
-  background: #141418;
-  border-radius: 2px;
-  box-shadow: inset 0 0 0 1px #c9a24a;
-}
-
-.av-glass-r {
-  left: auto;
-  right: 15px;
-}
-
-.av-bridge {
-  top: 21px;
-  left: 28px;
-  width: 6px;
-  height: 2px;
-  background: #c9a24a;
-}
-
-.av-collar {
-  bottom: 6px;
-  left: 8px;
-  right: 8px;
-  height: 10px;
-  background: #8a241c;
-  border-radius: 4px 4px 0 0;
+  width: 100%;
+  height: 100%;
 }
 
 .chud-main {
-  width: 196px;
-  padding: 8px 10px 7px;
+  width: 148px;
+  padding: 7px 9px 6px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(14, 18, 24, 0.58);
@@ -657,7 +643,7 @@ html.gpu-accel .wulai-bits {
 }
 
 .chud--folded .chud-main {
-  width: min(168px, 44vw);
+  width: min(128px, 44vw);
   padding: 6px 8px 6px;
 }
 
@@ -771,39 +757,18 @@ html.gpu-accel .wulai-bits {
   color: #ffd166;
 }
 
-.chud-atk {
+.chud-cds {
   display: flex;
-  gap: 10px;
+  gap: 4px;
   margin-top: 4px;
-  color: rgba(255, 255, 255, 0.58);
+}
+
+.chud-cd {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 10px;
-}
-
-.chud-atk em {
-  font-style: normal;
-}
-
-.chud-move {
-  margin-top: 4px;
-  color: #ffd166;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.chud-combo {
-  display: flex;
-  gap: 6px;
-  margin-top: 4px;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 10px;
-}
-
-.chud-combo i {
-  font-style: normal;
-}
-
-.chud-combo i.next {
-  color: #ffd166;
 }
 
 .game-toast {
@@ -1220,13 +1185,23 @@ html.mobile-touch-guard #root {
   font-size: 11px;
 }
 
+.mobile-game .hud-left--mobile .hud-compass {
+  width: 24px;
+  height: 24px;
+}
+
 .mobile-game .chud--mobile {
   gap: 6px;
 }
 
 .mobile-game .chud--mobile .av {
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
+}
+
+.mobile-game .chud--mobile .chud-main {
+  width: 118px;
+  padding: 5px 7px;
 }
 
 .mobile-game .chud--mobile .chud-name b {
@@ -1234,14 +1209,24 @@ html.mobile-touch-guard #root {
 }
 
 .mobile-game .chud--mobile .chud-name span,
-.mobile-game .chud--mobile .chud-meta,
-.mobile-game .chud--mobile .chud-atk em,
-.mobile-game .chud--mobile .chud-combo i,
-.mobile-game .chud--mobile .chud-move {
+.mobile-game .chud--mobile .chud-meta {
   font-size: 9px;
 }
 
+.mobile-game .chud--mobile .chud-meta {
+  margin-top: 3px;
+  gap: 6px;
+}
+
 .mobile-game .chud--mobile .chud-bar {
+  height: 7px;
+}
+
+.mobile-game .chud--mobile .chud-bar.xp {
+  height: 3px;
+}
+
+.mobile-game .chud--mobile.chud--folded .chud-bar.xp {
   height: 7px;
 }
 
@@ -1585,10 +1570,6 @@ html.mobile-touch-guard #root {
   font-size: 15px;
   font-variant-numeric: tabular-nums;
   color: rgba(255, 255, 255, 0.88);
-}
-
-.chud-atk em.cd {
-  color: rgba(255, 255, 255, 0.45);
 }
 
 @media (max-height: 420px) and (orientation: landscape) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { COMBO, moveOf } from './skills';
+import { moveOf } from './skills';
 import { HERO_NAME } from '../../config/lore';
 import {
   LEVEL_MAX,
@@ -10,7 +10,6 @@ import {
   equipWeapon,
   liveStats,
   usePotion,
-  world,
 } from './stores/combatStore';
 
 /**
@@ -18,16 +17,55 @@ import {
  * 100ms 读一次 combatStore，和右上角氮气面板同一套路。
  */
 
+/** 头部特写：圆顺黑发、大号黑墨镜 */
 function Avatar() {
   return (
     <div className="av" aria-label={HERO_NAME} title={HERO_NAME}>
-      <i className="av-hair" />
-      <i className="av-face" />
-      <i className="av-glass" />
-      <i className="av-glass av-glass-r" />
-      <i className="av-bridge" />
-      <i className="av-collar" />
+      <svg viewBox="0 0 64 64" aria-hidden>
+        <defs>
+          <linearGradient id="av-bg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#4a5d6e" />
+            <stop offset="1" stopColor="#222c36" />
+          </linearGradient>
+          <linearGradient id="av-skin" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#efc29c" />
+            <stop offset="1" stopColor="#c99272" />
+          </linearGradient>
+          <linearGradient id="av-lens" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#2a2f3a" />
+            <stop offset="1" stopColor="#07080b" />
+          </linearGradient>
+        </defs>
+        <rect width="64" height="64" fill="url(#av-bg)" />
+        {/* 耳朵 + 脸 */}
+        <ellipse cx="12.5" cy="37" rx="3.2" ry="4.6" fill="#c99272" />
+        <ellipse cx="51.5" cy="37" rx="3.2" ry="4.6" fill="#c99272" />
+        <path d="M13 30 C13 13 51 13 51 30 V38 C51 51 42 58 32 58 C22 58 13 51 13 38 Z" fill="url(#av-skin)" />
+        {/* 头发：整块圆顶 + 斜刘海 */}
+        <path
+          d="M11 35 C9 15 20 6 33 6 C46 6 55 15 53 35 C52 28 49 24 45 22 C38 25 27 26 18 22 C15 25 12 29 11 35 Z"
+          fill="#16110d"
+        />
+        <path d="M20 13 C25 9 33 8.5 39 10" stroke="#3a2e26" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        {/* 墨镜 */}
+        <path d="M14 33 L11.5 32 M50 33 L52.5 32" stroke="#0c0d11" strokeWidth="1.6" strokeLinecap="round" />
+        <rect x="14" y="29" width="16" height="11" rx="3.5" fill="url(#av-lens)" stroke="#0c0d11" strokeWidth="1" />
+        <rect x="34" y="29" width="16" height="11" rx="3.5" fill="url(#av-lens)" stroke="#0c0d11" strokeWidth="1" />
+        <path d="M30 32 Q32 30.8 34 32" stroke="#0c0d11" strokeWidth="1.6" fill="none" />
+        <path d="M17 31.5 L21 37 M37 31.5 L41 37" stroke="#fff" strokeOpacity="0.32" strokeWidth="1.3" strokeLinecap="round" />
+        {/* 嘴 */}
+        <path d="M27.5 48.5 Q32 51 36.5 48" stroke="#7a3d2e" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      </svg>
     </div>
+  );
+}
+
+function CdChip({ name, cd }) {
+  if (cd <= 0) return null;
+  return (
+    <span className="chud-cd">
+      {name} {Math.ceil(cd)}s
+    </span>
   );
 }
 
@@ -104,34 +142,10 @@ export default function CombatHud({ mobileCompact = false }) {
               <span>防 {s.def}</span>
               <span className="chud-wep">{s.weaponName}</span>
             </div>
-            <div className="chud-atk">
-              <em>J 刺/劈/砍/旋</em>
-              <em>空中 J</em>
-              <em title={moveOf('skill').name}>{moveOf('skill').name[0]}</em>
-              <em
-                className={combat.whirlCd > 0 ? 'cd' : ''}
-                title={moveOf('whirl').name}
-              >
-                {moveOf('whirl').name[0]}
-                {combat.whirlCd > 0 ? ` ${Math.ceil(combat.whirlCd)}s` : ''}
-              </em>
-              <em
-                className={combat.wulaiCd > 0 ? 'cd' : ''}
-                title={moveOf('wulai').name}
-              >
-                {moveOf('wulai').name[0]}
-                {combat.wulaiCd > 0 ? ` ${Math.ceil(combat.wulaiCd)}s` : ''}
-              </em>
-            </div>
-            {world.move ? (
-              <div className="chud-move">{moveOf(world.move).name}</div>
-            ) : (
-              <div className="chud-combo">
-                {COMBO.map((id, i) => (
-                  <i key={id} className={world.combo === i && world.comboGate > 0 ? 'next' : ''}>
-                    {moveOf(id).name}
-                  </i>
-                ))}
+            {!mobileCompact && (combat.whirlCd > 0 || combat.wulaiCd > 0) && (
+              <div className="chud-cds">
+                <CdChip name={moveOf('whirl').name} cd={combat.whirlCd} />
+                <CdChip name={moveOf('wulai').name} cd={combat.wulaiCd} />
               </div>
             )}
           </div>

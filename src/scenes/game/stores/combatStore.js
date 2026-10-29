@@ -306,6 +306,8 @@ export const world = {
   y: 0,
   z: 0,
   yaw: 0,
+  /** 相机绕 Y 的角度；镜头朝 (-sin, 0, -cos)，HUD 指北针用 */
+  camYaw: Math.PI,
   air: false,
   /** 当前招式 id，见 combatMoves.MOVES */
   move: '',

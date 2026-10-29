@@ -858,6 +858,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     world.y = s.pos.y;
     world.z = s.pos.z;
     world.yaw = s.yaw;
+    world.camYaw = s.camYaw;
     world.air = s.air;
     if (!combat.dead) tryPickup(s.pos.x, s.pos.z);
 
