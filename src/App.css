@@ -895,17 +895,48 @@
 
 /* SU7 加载占位（Canvas 内 Html） */
 .su7-loading-tag {
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 8px 12px;
   border-radius: 999px;
   font-size: 13px;
-  font-weight: 600;
-  color: #e8f4ff;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(236, 238, 242, 0.88);
   white-space: nowrap;
-  background: rgba(8, 14, 22, 0.82);
-  border: 1px solid rgba(126, 200, 232, 0.45);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(
+    165deg,
+    rgba(168, 176, 186, 0.42) 0%,
+    rgba(96, 104, 114, 0.28) 48%,
+    rgba(72, 78, 88, 0.18) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   pointer-events: none;
   user-select: none;
+  animation: su7-loading-tag-pulse 2.4s ease-in-out infinite;
+}
+
+.su7-loading-icon {
+  width: 28px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+@keyframes su7-loading-tag-pulse {
+  0%,
+  100% {
+    opacity: 0.92;
+  }
+  50% {
+    opacity: 0.72;
+  }
 }
 
 /* ---- 武来进图加载遮罩 ---- */
