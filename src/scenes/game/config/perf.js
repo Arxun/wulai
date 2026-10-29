@@ -12,7 +12,7 @@ export const GAME_PERF = {
   environmentResolution: 48,
   /** 草簇散布数量（Instanced 顶点量） */
   grassClusterCount: 880,
-  /** 首屏：资源就绪后至少等若干帧再预热（等 Player/FX 挂载） */
+  /** 进图后至少等若干帧再 idle 预热技能（等 Player/FX 挂载） */
   skillWarmupAfterFrames: 2,
   /** 找不到 FX 根节点时最多再等多少帧 */
   skillWarmupMaxFrames: 300,

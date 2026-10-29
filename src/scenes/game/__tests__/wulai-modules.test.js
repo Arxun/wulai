@@ -21,6 +21,7 @@ import {
   beginGameLoad,
   completeGameLoadWarmup,
   getGameLoadingState,
+  markGameLoadCriticalReady,
   resetGameLoad,
   updateGameLoadAssets,
 } from '../stores/gameLoadingStore';
@@ -233,6 +234,8 @@ describe('诊断 debug/（自检）', () => {
     updateGameLoadAssets({ active: false, progress: 100, loaded: 2, total: 2 });
     expect(getGameLoadingState().progress).toBe(100);
     expect(getGameLoadingState().assetsReady).toBe(true);
+    markGameLoadCriticalReady();
+    expect(getGameLoadingState().criticalReady).toBe(true);
     completeGameLoadWarmup();
     expect(getGameLoadingState().warmupDone).toBe(true);
     resetGameLoad();

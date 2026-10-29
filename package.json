@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "preview": "vite preview --host",
     "model:relief": "cd tools/image-to-3d && ./run.sh generate --backend relief --image ../../public/reference.jpg --mask ../../public/photo3d/person-mask.png --depth ../../public/photo3d/depth.png --out-dir ../../public/models --name person --preview-dir out",
-    "model:triposr": "cd tools/image-to-3d && ./run.sh generate --backend triposr --image ../../public/reference.jpg --mask ../../public/photo3d/person-mask.png --out-dir ../../public/models --name person --resolution 256 --preview-dir out --debug-dir out"
+    "model:triposr": "cd tools/image-to-3d && ./run.sh generate --backend triposr --image ../../public/reference.jpg --mask ../../public/photo3d/person-mask.png --out-dir ../../public/models --name person --resolution 256 --preview-dir out --debug-dir out",
+    "model:su7-draco": "npx @gltf-transform/cli@3.10.1 optimize public/models/su7/sm_car.gltf public/models/su7/sm_car_opt.gltf --compress draco && cp public/models/su7/sm_car_opt.gltf public/models/su7/sm_car.gltf"
   },
   "dependencies": {
     "@react-three/drei": "^9.109.0",

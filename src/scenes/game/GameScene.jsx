@@ -1,7 +1,7 @@
-import { Suspense, memo, useRef } from 'react';
+import { memo, useRef } from 'react';
 import SkyDome from '../../lib/components/SkyDome';
 import { getGamePerf } from './config/perf';
-import GameEnvironment from './GameEnvironment';
+import IdleDeferredLoad from './IdleDeferredLoad';
 import FloatTexts from './FloatTexts';
 import Loot from './Loot';
 import BloodStain from './fx/BloodStain';
@@ -13,8 +13,6 @@ import { WulaiCrater } from './skills/fx';
 import { Monsters } from './monsters';
 import GameDiagnostics from './GameDiagnostics';
 import SkillFxWarmup from './SkillFxWarmup';
-import { Su7CarPlacement } from './vehicles';
-
 function GameSceneInner() {
   const lightRef = useRef();
   const skidRef = useRef();
@@ -47,18 +45,12 @@ function GameSceneInner() {
       />
       <directionalLight position={[40, 20, -30]} intensity={0.35} color="#dce8f2" />
 
-      <Suspense fallback={null}>
-        <GameEnvironment />
-      </Suspense>
-
       <GameTerrain />
       <Scatter />
       <Monsters />
       <WulaiCrater />
-      <Suspense fallback={null}>
-        <Su7CarPlacement />
-      </Suspense>
       <Player lightRef={lightRef} skidRef={skidRef} lineRef={lineRef} />
+      <IdleDeferredLoad />
       <Loot />
       <FloatTexts />
       <SkidMarks ref={skidRef} />

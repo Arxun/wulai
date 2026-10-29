@@ -7,11 +7,16 @@
  *   { type: 'group', items: [...] }     // 同一组按钮挨在一起（比如模式切换）
  * 任一项可以带 `hidden: true` 来隐藏。
  */
-export default function ControlPanel({ items, className = 'panel' }) {
-  return <div className={className}>{items.filter((i) => !i.hidden).map(renderItem)}</div>;
+export default function ControlPanel({ items, className = 'panel', keyboardFocus = true }) {
+  return (
+    <div className={className}>
+      {items.filter((i) => !i.hidden).map((item, index) => renderItem(item, index, keyboardFocus))}
+    </div>
+  );
 }
 
-function renderItem(item, index) {
+function renderItem(item, index, keyboardFocus) {
+  const tab = keyboardFocus ? undefined : -1;
   switch (item.type) {
     case 'slider':
       return (
@@ -19,6 +24,7 @@ function renderItem(item, index) {
           {item.label}
           <input
             type="range"
+            tabIndex={tab}
             min={item.min}
             max={item.max}
             step={item.step}
@@ -30,13 +36,13 @@ function renderItem(item, index) {
     case 'group':
       return (
         <div key={index} className="panel-group">
-          {item.items.filter((i) => !i.hidden).map(renderItem)}
+          {item.items.filter((i) => !i.hidden).map((sub, j) => renderItem(sub, j, keyboardFocus))}
         </div>
       );
     case 'button':
     default:
       return (
-        <button key={index} className={item.active ? 'active' : ''} onClick={item.onClick}>
+        <button key={index} tabIndex={tab} className={item.active ? 'active' : ''} onClick={item.onClick}>
           {item.label}
         </button>
       );

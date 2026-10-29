@@ -1,49 +1,56 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import ControlPanel from './lib/components/ControlPanel';
 import { urlParam } from './lib/hooks/useUrlParams';
 import { REFERENCE_PHOTO } from './config/assets';
 import { GAME_TITLE } from './config/lore';
 import { DEFAULT_MODE, MODES } from './config/modes';
-import GameHud from './scenes/game/GameHud';
-import GameLoadReporter from './scenes/game/GameLoadReporter';
-import GameLoadingOverlay from './scenes/game/GameLoadingOverlay';
-import GameScene from './scenes/game';
 import { beginGameLoad, resetGameLoad } from './scenes/game/stores/gameLoadingStore';
-import LowPolyScene from './scenes/lowpoly/LowPolyScene';
-import { getGamePerf, setGamePerfMobile } from './scenes/game/config/perf';
+import { setGamePerfMobile } from './scenes/game/config/perf';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
-import MobileCanvasResize from './scenes/game/mobile/MobileCanvasResize';
-import MobileGameFrame from './scenes/game/mobile/MobileGameFrame';
 import { computeMobileViewLayout, mobileCanvasKey } from './scenes/game/mobile/mobileViewLayout';
-import MobileRotateFab from './scenes/game/mobile/MobileRotateFab';
-import MobileViewRotator from './scenes/game/mobile/MobileViewRotator';
 import './App.css';
+
+const GameCanvasInner = lazy(() => import('./scenes/game/GameCanvasInner'));
+const GameModeUi = lazy(() => import('./scenes/game/GameModeUi'));
+const LowPolyScene = lazy(() => import('./scenes/lowpoly/LowPolyScene'));
+const MobileGameFrame = lazy(() => import('./scenes/game/mobile/MobileGameFrame'));
+const MobileRotateFab = lazy(() => import('./scenes/game/mobile/MobileRotateFab'));
+const MobileViewRotator = lazy(() => import('./scenes/game/mobile/MobileViewRotator'));
 
 /** 渲染当前模式的场景（画布配置来自 MODES） */
 function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal', mobileLayoutSync = false }) {
   const cfg = MODES[mode];
   const isGame = mode === 'game';
-  const perf = isGame ? getGamePerf() : null;
+  const [perf, setPerf] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!isGame) {
+      setPerf(null);
+      return;
+    }
+    import('./scenes/game/config/perf').then((m) => setPerf(m.getGamePerf()));
+  }, [isGame, mobileLayoutSync]);
+
   return (
     <Canvas
       key={isGame ? `${mode}-${canvasKey}` : mode}
       shadows={mode === 'lowpoly' || isGame}
-      dpr={isGame ? perf.dpr : [1, 2]}
+      dpr={isGame && perf ? perf.dpr : isGame ? [1, 1.5] : [1, 2]}
       camera={cfg.camera}
       gl={{ antialias: isGame ? !mobileLayoutSync : true, preserveDrawingBuffer: !isGame }}
       resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
       style={{ display: 'block', width: '100%', height: '100%' }}
     >
-      {isGame && mobileLayoutSync && <MobileCanvasResize />}
-      {isGame && <GameLoadReporter />}
-      <Suspense fallback={null}>
-        {mode === 'game' && <GameScene />}
-      </Suspense>
+      {isGame && (
+        <Suspense fallback={null}>
+          <GameCanvasInner mobileLayoutSync={mobileLayoutSync} />
+        </Suspense>
+      )}
       {mode === 'lowpoly' && (
-        <>
+        <Suspense fallback={null}>
           <LowPolyScene />
           <OrbitControls
             ref={controlsRef}
@@ -56,7 +63,7 @@ function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal', mobil
             maxDistance={10}
             maxPolarAngle={Math.PI / 2 + 0.15}
           />
-        </>
+        </Suspense>
       )}
     </Canvas>
   );
@@ -103,8 +110,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (isGame) beginGameLoad();
-    else resetGameLoad();
+    if (isGame) {
+      beginGameLoad();
+      void import('./scenes/game/GameCanvasInner');
+      void import('./scenes/game/GameModeUi');
+    } else resetGameLoad();
   }, [isGame]);
 
   const panelItems = [
@@ -147,6 +157,12 @@ export default function App() {
     },
   ];
 
+  const gameUi = isGame && (
+    <Suspense fallback={null}>
+      <GameModeUi mobileActive={mobileGame} />
+    </Suspense>
+  );
+
   const body = (
     <>
       {showRef && isLowPoly && (
@@ -158,22 +174,22 @@ export default function App() {
 
       <div className={`frame${isGame ? ' wide' : ''}${mobileGame ? ' mobile-frame' : ''}`}>
         {mobileGame ? (
-          <MobileGameFrame enabled>
-            <ModeCanvas
-              mode={mode}
-              autoRotate={autoRotate}
-              controlsRef={controlsRef}
-              canvasKey={canvasKey}
-              mobileLayoutSync
-            />
-            {isGame && <GameLoadingOverlay />}
-            {isGame && <GameHud mobileActive />}
-          </MobileGameFrame>
+          <Suspense fallback={null}>
+            <MobileGameFrame enabled>
+              <ModeCanvas
+                mode={mode}
+                autoRotate={autoRotate}
+                controlsRef={controlsRef}
+                canvasKey={canvasKey}
+                mobileLayoutSync
+              />
+              {gameUi}
+            </MobileGameFrame>
+          </Suspense>
         ) : (
           <>
             <ModeCanvas mode={mode} autoRotate={autoRotate} controlsRef={controlsRef} />
-            {isGame && <GameLoadingOverlay />}
-            {isGame && <GameHud />}
+            {gameUi}
           </>
         )}
 
@@ -188,7 +204,7 @@ export default function App() {
         )}
         {!isGame && <span className="tag">{cfg.tag}</span>}
 
-        <ControlPanel items={panelItems} />
+        <ControlPanel items={panelItems} keyboardFocus={!isGame} />
         <div className="hint">{cfg.hint}</div>
       </div>
     </>
@@ -196,12 +212,18 @@ export default function App() {
 
   return (
     <div className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}${mobileGame ? ' mobile-game' : ''}`}>
-      {mobileGame && (
-        <MobileRotateFab onRotate={() => setViewRotation((d) => (d + 90) % 360)} />
+      {mobileGame ? (
+        <Suspense fallback={body}>
+          <>
+            <MobileRotateFab onRotate={() => setViewRotation((d) => (d + 90) % 360)} />
+            <MobileViewRotator enabled layout={mobileViewLayout}>
+              {body}
+            </MobileViewRotator>
+          </>
+        </Suspense>
+      ) : (
+        body
       )}
-      <MobileViewRotator enabled={mobileGame} layout={mobileViewLayout}>
-        {body}
-      </MobileViewRotator>
     </div>
   );
 }

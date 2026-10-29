@@ -20,6 +20,47 @@ import {
 
 const BLOCK = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space']);
 
+/** 武来模式用到的键：capture 阶段抢先处理，避免焦点在面板滑条/按钮上时被浏览器吃掉 */
+const GAME_KEYS = new Set([
+  ...BLOCK,
+  'KeyW',
+  'KeyA',
+  'KeyS',
+  'KeyD',
+  'ShiftLeft',
+  'ShiftRight',
+  'ControlLeft',
+  'ControlRight',
+  'KeyF',
+  'KeyQ',
+  'KeyE',
+  'KeyJ',
+  'KeyK',
+  'KeyR',
+  'Digit1',
+  'Digit2',
+  'Digit3',
+  'Digit4',
+  'Digit5',
+  'Digit6',
+  'Numpad1',
+  'Numpad2',
+  'Numpad3',
+  'Numpad4',
+  'Numpad5',
+  'Numpad6',
+]);
+
+const MODIFIERS = new Set(['AltLeft', 'AltRight', 'MetaLeft', 'MetaRight']);
+
+function blurFocusedControl() {
+  const el = document.activeElement;
+  if (!el || el === document.body) return;
+  if (el instanceof HTMLInputElement || el instanceof HTMLButtonElement || el instanceof HTMLTextAreaElement) {
+    el.blur();
+  }
+}
+
 export function useKeyboard(onPress, onRelease) {
   const keys = useRef(new Set());
   const cb = useRef(onPress);
@@ -28,19 +69,27 @@ export function useKeyboard(onPress, onRelease) {
   cbUp.current = onRelease;
   useEffect(() => {
     const down = (e) => {
-      if (BLOCK.has(e.code)) e.preventDefault();
+      if (GAME_KEYS.has(e.code)) {
+        e.preventDefault();
+        blurFocusedControl();
+      }
       if (!e.repeat) cb.current?.(e.code);
       keys.current.add(e.code);
     };
     const up = (e) => {
       keys.current.delete(e.code);
       cbUp.current?.(e.code);
+      if (MODIFIERS.has(e.code)) keys.current.clear();
     };
-    // 切到别的窗口时松开所有键，避免回来还在"一直往前跑"
-    const blur = () => keys.current.clear();
-    window.addEventListener('keydown', down, { passive: false });
-    window.addEventListener('keyup', up);
-    window.addEventListener('blur', blur);
+    const clearKeys = () => keys.current.clear();
+    const onVis = () => {
+      if (document.hidden) clearKeys();
+    };
+    const opts = { capture: true, passive: false };
+    document.addEventListener('keydown', down, opts);
+    document.addEventListener('keyup', up, opts);
+    window.addEventListener('blur', clearKeys);
+    document.addEventListener('visibilitychange', onVis);
     const unsubMobile = subscribeMobilePress((code) => {
       cb.current?.(code);
     });
@@ -48,9 +97,10 @@ export function useKeyboard(onPress, onRelease) {
       cbUp.current?.(code);
     });
     return () => {
-      window.removeEventListener('keydown', down);
-      window.removeEventListener('keyup', up);
-      window.removeEventListener('blur', blur);
+      document.removeEventListener('keydown', down, opts);
+      document.removeEventListener('keyup', up, opts);
+      window.removeEventListener('blur', clearKeys);
+      document.removeEventListener('visibilitychange', onVis);
       unsubMobile();
       unsubMobileUp();
     };

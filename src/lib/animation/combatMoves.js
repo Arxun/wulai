@@ -591,6 +591,11 @@ export function tickMoves(world, dt) {
     world.lock = false;
     if (world.move === 'wulai') world.move = '';
   }
+
+  if (world.lock && world.move !== 'wulai' && world.swing <= 0 && world.heavy <= 0) {
+    world.lock = false;
+    world.move = '';
+  }
 }
 
 export function resetMoves(world) {

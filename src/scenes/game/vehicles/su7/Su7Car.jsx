@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { memo, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { SU7_CAR } from '../../../../config/assets';
+import { configureSu7GltfLoader } from '../../su7DracoLoader';
 import DriverBust from '../../../lowpoly/person/DriverBust';
 import { SU7_DRIVER_LOCAL, SU7_MESH_YAW } from './driverSeat';
 import { replicaUpdateWheels } from './replicaCar';
@@ -14,7 +15,7 @@ import { terrainHeight } from '../../maps/huangshan/heightfield';
 import { vehicle } from '../runtime';
 
 function Su7Car({ bodyColor = '#26d6e9' }) {
-  const gltf = useGLTF(SU7_CAR.gltf, false);
+  const gltf = useGLTF(SU7_CAR.gltf, true, false, configureSu7GltfLoader);
   const aoMap = useTexture(SU7_CAR.bodyAo);
   const carRoot = useRef();
   const bustWrap = useRef();
@@ -114,5 +115,3 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
 }
 
 export default memo(Su7Car);
-
-useGLTF.preload(SU7_CAR.gltf, false);

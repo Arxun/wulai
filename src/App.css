@@ -902,12 +902,14 @@
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-  animation: game-load-in 0.45s ease-out both;
+  animation: game-load-in 0.28s ease-out both;
+  cursor: pointer;
 }
 
 .game-load--leave {
   pointer-events: none;
-  animation: game-load-out 0.48s ease-in forwards;
+  cursor: default;
+  animation: game-load-out 0.32s ease-in forwards;
 }
 
 .game-load__veil {

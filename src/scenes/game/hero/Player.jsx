@@ -302,6 +302,8 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     const down = (e) => {
       s.dragging = true;
       el.setPointerCapture?.(e.pointerId);
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && typeof ae.blur === 'function') ae.blur();
     };
     const up = (e) => {
       s.dragging = false;
