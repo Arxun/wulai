@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import GameEnvironment from './GameEnvironment';
+import Su7LoadingPlaceholder from './vehicles/su7/Su7LoadingPlaceholder';
 import { Su7CarPlacement } from './vehicles';
 import { runWhenIdle } from './lib/runWhenIdle';
 import { getGameLoadingState, subscribeGameLoading } from './stores/gameLoadingStore';
@@ -19,10 +20,10 @@ export default function IdleDeferredLoad() {
       if (cancelled || started.current) return;
       started.current = true;
       void (async () => {
-        await runWhenIdle(() => {}, { timeout: 800 });
+        await runWhenIdle(() => {}, { timeout: 400 });
         if (cancelled) return;
         setTier(1);
-        await runWhenIdle(() => {}, { timeout: 3500 });
+        await runWhenIdle(() => {}, { timeout: 900 });
         if (cancelled) return;
         setTier(2);
       })();
@@ -49,7 +50,7 @@ export default function IdleDeferredLoad() {
         <GameEnvironment />
       </Suspense>
       {tier >= 2 && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<Su7LoadingPlaceholder />}>
           <Su7CarPlacement />
         </Suspense>
       )}

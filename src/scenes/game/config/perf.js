@@ -22,10 +22,11 @@ export const GAME_PERF = {
   gateLoadingOnSkillWarmup: false,
   /** 预热是否 compile 整场景（true 更重；进图后后台预热时仍建议 false） */
   skillWarmupFullScene: false,
-  /** 移动端：进图稳定后再预热（帧），避免与首帧抢 GPU */
-  skillWarmupAfterFramesMobile: 90,
-  /** 移动端：requestIdleCallback 最长等待（毫秒） */
-  skillWarmupIdleTimeoutMs: 4000,
+  /** 移动端：进图后若干帧再预热（略早于 idle，减轻首技能卡顿） */
+  skillWarmupAfterFramesMobile: 10,
+  /** idle 预热最长等待（毫秒）；桌面更短 */
+  skillWarmupIdleTimeoutMs: 600,
+  skillWarmupIdleTimeoutMsMobile: 900,
 };
 
 const MOBILE_OVERRIDES = {

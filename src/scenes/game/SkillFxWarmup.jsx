@@ -1,6 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useRef } from 'react';
-import { getGamePerf } from './config/perf';
+import { getGamePerf, isGamePerfMobile } from './config/perf';
 import { runWhenIdle } from './lib/runWhenIdle';
 import { countSkillFxWarmupRoots, warmupSkillFxShaders } from './debug/warmupShaders';
 import {
@@ -25,11 +25,13 @@ export default function SkillFxWarmup() {
     if (load.phase === 'loading' && load.show) return;
 
     const perf = getGamePerf();
-    const minFrames = perf.skillWarmupAfterFramesMobile;
+    const mobile = isGamePerfMobile();
+    const minFrames = mobile ? perf.skillWarmupAfterFramesMobile : perf.skillWarmupAfterFrames;
     if (frames.current < minFrames) return;
 
     const roots = countSkillFxWarmupRoots(scene);
-    if (roots < 1 && frames.current < perf.skillWarmupMaxFrames) return;
+    const maxWait = mobile ? 45 : 24;
+    if (roots < 1 && frames.current < maxWait) return;
 
     running.current = true;
     if (perf.gateLoadingOnSkillWarmup && !startedHint.current) {
@@ -38,7 +40,10 @@ export default function SkillFxWarmup() {
     }
 
     const run = async () => {
-      await runWhenIdle(() => {}, { timeout: perf.skillWarmupIdleTimeoutMs });
+      const idleMs = mobile ? perf.skillWarmupIdleTimeoutMsMobile : perf.skillWarmupIdleTimeoutMs;
+      if (idleMs > 0) {
+        await runWhenIdle(() => {}, { timeout: idleMs });
+      }
       try {
         const n = await warmupSkillFxShaders(gl, scene, camera, {
           fullScene: perf.skillWarmupFullScene,

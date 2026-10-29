@@ -893,6 +893,21 @@
   background: rgba(21, 101, 192, 0.35);
 }
 
+/* SU7 加载占位（Canvas 内 Html） */
+.su7-loading-tag {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8f4ff;
+  white-space: nowrap;
+  background: rgba(8, 14, 22, 0.82);
+  border: 1px solid rgba(126, 200, 232, 0.45);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ---- 武来进图加载遮罩 ---- */
 .game-load {
   position: absolute;
