@@ -6,8 +6,8 @@ import { runWhenIdle } from './lib/runWhenIdle';
 import { getGameLoadingState, subscribeGameLoading } from './stores/gameLoadingStore';
 
 /**
- * 进图后在 idle 里分批加载：环境光 → SU7（约 3MB）。
- * 不阻塞首屏遮罩关闭。
+ * 进图后在 idle 里挂上：环境光 → SU7。
+ * 文件在进图时已经低优先级预取，这里只负责解码和上传，不挡进游戏。
  */
 export default function IdleDeferredLoad() {
   const [tier, setTier] = useState(0);
@@ -20,10 +20,10 @@ export default function IdleDeferredLoad() {
       if (cancelled || started.current) return;
       started.current = true;
       void (async () => {
-        await runWhenIdle(() => {}, { timeout: 400 });
+        await runWhenIdle(() => {}, { timeout: 180 });
         if (cancelled) return;
         setTier(1);
-        await runWhenIdle(() => {}, { timeout: 900 });
+        await runWhenIdle(() => {}, { timeout: 420 });
         if (cancelled) return;
         setTier(2);
       })();

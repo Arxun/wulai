@@ -17,12 +17,72 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #cfd8dc;
+        background: #0a0c10;
         font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(ellipse 80% 60% at 50% 40%, #2a3544 0%, #12161c 55%, #0a0c10 100%);
+        color: #c8d4e0;
+        font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      }
+      #boot-splash .boot-panel {
+        text-align: center;
+        min-width: min(280px, 72vw);
+        padding: 28px 36px 32px;
+        border-radius: 16px;
+        background: rgba(12, 16, 22, 0.55);
+        border: 1px solid rgba(255, 220, 160, 0.12);
+      }
+      #boot-splash .boot-brand {
+        margin: 0 0 12px;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: 0.35em;
+        text-indent: 0.35em;
+        color: #ffe8b8;
+      }
+      #boot-splash .boot-text {
+        margin: 0;
+        font-size: 15px;
+      }
+      #boot-splash .boot-bar {
+        margin: 18px auto 0;
+        height: 4px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+      #boot-splash .boot-bar i {
+        display: block;
+        height: 100%;
+        width: 8%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #3d8bfd, #ffd56a);
+      }
+      #boot-splash .boot-sub {
+        margin: 10px 0 0;
+        font-size: 12px;
+        color: rgba(200, 212, 224, 0.55);
       }
     </style>
   </head>
   <body>
+    <div id="boot-splash" aria-live="polite">
+      <div class="boot-panel">
+        <p class="boot-brand">武来</p>
+        <p class="boot-text" data-text>正在加载场景…</p>
+        <div class="boot-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+          <i data-fill></i>
+        </div>
+        <p class="boot-sub">画面出来即可进入</p>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

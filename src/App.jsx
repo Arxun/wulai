@@ -6,7 +6,8 @@ import { urlParam } from './lib/hooks/useUrlParams';
 import { REFERENCE_PHOTO } from './config/assets';
 import { GAME_TITLE } from './config/lore';
 import { DEFAULT_MODE, MODES } from './config/modes';
-import { beginGameLoad, resetGameLoad } from './scenes/game/stores/gameLoadingStore';
+import { prefetchSu7 } from './lib/prefetchSu7';
+import { beginGameLoad, noteGameLoadStage, resetGameLoad } from './scenes/game/stores/gameLoadingStore';
 import { setGamePerfMobile } from './scenes/game/config/perf';
 import { applyGpuAccelDomClass, buildCanvasGlOptions } from './scenes/game/lib/gpuAccel';
 import { useGameMobile } from './lib/hooks/useGameMobile';
@@ -40,6 +41,7 @@ function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal', mobil
       buildCanvasGlOptions({
         antialias: isGame ? !mobileLayoutSync : true,
         preserveDrawingBuffer: !isGame,
+        alpha: !isGame,
       }),
     [isGame, mobileLayoutSync],
   );
@@ -132,7 +134,8 @@ export default function App() {
     if (isGame) {
       applyGpuAccelDomClass();
       beginGameLoad();
-      void import('./scenes/game/GameCanvasInner');
+      prefetchSu7();
+      void import('./scenes/game/GameCanvasInner').then(() => noteGameLoadStage('chunk'));
       void import('./scenes/game/GameModeUi');
       // 一局只在离开游戏模式时结束；旋转 / 布局切换导致的 Canvas remount 不算
       return () => {

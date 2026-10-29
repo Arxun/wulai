@@ -1,3 +1,4 @@
+import { useFrame } from '@react-three/fiber';
 import { memo, useRef } from 'react';
 import SkyDome from '../../lib/components/SkyDome';
 import { getGamePerf } from './config/perf';
@@ -15,6 +16,18 @@ import GameDiagnostics from './GameDiagnostics';
 import SkillFxWarmup from './SkillFxWarmup';
 import PerfProbe from './debug/PerfProbe';
 import { FxLightPool } from './fx/FxLight';
+import { markGameLoadCriticalReady } from './stores/gameLoadingStore';
+
+/** 主场景真正画出一帧再关进图遮罩（挂上组件时画面还是空的） */
+function ReportFirstFrame() {
+  const sent = useRef(false);
+  useFrame(() => {
+    if (sent.current) return;
+    sent.current = true;
+    markGameLoadCriticalReady();
+  });
+  return null;
+}
 
 const PERF_PARAM = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('perf') : null;
 
@@ -27,6 +40,7 @@ function GameSceneInner() {
 
   return (
     <>
+      <ReportFirstFrame />
       <GameDiagnostics />
       <SkillFxWarmup />
       {PERF_PARAM && <PerfProbe auto={PERF_PARAM === 'auto'} />}

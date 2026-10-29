@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useLayoutEffect, useSyncExternalStore } from 'react';
 import {
   dismissGameLoadOverlay,
   getGameLoadingState,
@@ -6,21 +6,23 @@ import {
 } from './stores/gameLoadingStore';
 
 /**
- * 武来进图遮罩：短展示、可点击跳过；不等 SU7/全资源。
+ * 武来进图遮罩：盖住首屏白底，主场景画出第一帧就关；不等 SU7。可点击跳过。
  */
 export default function GameLoadingOverlay() {
-  const { show, phase, progress, total, statusHint } = useSyncExternalStore(
+  const { show, phase, progress, statusHint } = useSyncExternalStore(
     subscribeGameLoading,
     getGameLoadingState,
   );
 
+  useLayoutEffect(() => {
+    document.getElementById('boot-splash')?.remove();
+  }, []);
+
   if (!show && phase === 'hidden') return null;
 
   const leaving = phase === 'enter' || phase === 'hidden';
-  const label = phase === 'enter' ? '进入黄山…' : '正在启动…';
-  const sub =
-    statusHint ||
-    (total > 0 && phase === 'loading' ? `后台资源 (${progress}%)` : phase === 'loading' ? '点击屏幕进入' : '');
+  const label = phase === 'enter' ? '进入黄山…' : '正在加载场景…';
+  const sub = statusHint || (phase === 'loading' ? '画面出来即可进入 · 点击跳过' : '');
 
   return (
     <div
@@ -50,7 +52,7 @@ export default function GameLoadingOverlay() {
             </span>
           )}
         </p>
-        {phase === 'loading' && total > 0 && (
+        {phase === 'loading' && (
           <div className="game-load__bar" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
             <div className="game-load__bar-fill" style={{ width: `${progress}%` }} />
           </div>

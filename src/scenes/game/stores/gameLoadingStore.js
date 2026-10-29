@@ -5,8 +5,9 @@ import { GAME_PERF } from '../config/perf';
 /** 遮罩最短展示（不阻塞玩，只防闪一下） */
 const MIN_VISIBLE_MS = 180;
 const ENTER_HOLD_MS = 160;
-/** 不等待 Canvas/资源，到点即关遮罩 */
-const FAST_DISMISS_MS = 320;
+
+/** 首屏阶段进度：只涨不降，不等 SU7 */
+const BOOT_PROGRESS = { boot: 8, chunk: 46, canvas: 72 };
 
 let state = {
   /** 是否显示遮罩（由 App 在进入 game 模式时打开） */
@@ -34,11 +35,26 @@ let finishTimer = null;
 let hideTimer = null;
 let warmupFallbackTimer = null;
 let criticalFallbackTimer = null;
-let fastDismissTimer = null;
 
-const CRITICAL_FALLBACK_MS = 2800;
+/** 第一帧一直不来时的兜底，避免遮罩卡死；正常路径是画面出来就关 */
+const CRITICAL_FALLBACK_MS = 8000;
+
+function paintBootSplash() {
+  if (typeof document === 'undefined') return;
+  const root = document.getElementById('boot-splash');
+  if (!root) return;
+  if (!state.show || state.phase === 'hidden') {
+    root.remove();
+    return;
+  }
+  const fill = root.querySelector('[data-fill]');
+  const text = root.querySelector('[data-text]');
+  if (fill) fill.style.width = `${state.progress}%`;
+  if (text) text.textContent = state.phase === 'enter' ? '进入黄山…' : '正在加载场景…';
+}
 
 function emit() {
+  paintBootSplash();
   listeners.forEach((fn) => fn());
 }
 
@@ -47,20 +63,10 @@ function clearTimers() {
   if (hideTimer) clearTimeout(hideTimer);
   if (warmupFallbackTimer) clearTimeout(warmupFallbackTimer);
   if (criticalFallbackTimer) clearTimeout(criticalFallbackTimer);
-  if (fastDismissTimer) clearTimeout(fastDismissTimer);
   finishTimer = null;
   hideTimer = null;
   warmupFallbackTimer = null;
   criticalFallbackTimer = null;
-  fastDismissTimer = null;
-}
-
-function armFastDismiss() {
-  if (fastDismissTimer) return;
-  fastDismissTimer = setTimeout(() => {
-    fastDismissTimer = null;
-    markGameLoadCriticalReady();
-  }, FAST_DISMISS_MS);
 }
 
 function armCriticalFallback() {
@@ -87,7 +93,7 @@ export function beginGameLoad() {
   state = {
     show: true,
     assetsActive: true,
-    progress: 0,
+    progress: BOOT_PROGRESS.boot,
     loaded: 0,
     total: 0,
     phase: 'loading',
@@ -97,7 +103,14 @@ export function beginGameLoad() {
     statusHint: '',
   };
   armCriticalFallback();
-  armFastDismiss();
+  emit();
+}
+
+/** 首屏阶段：脚本块 / 画布挂上。只涨不降，不代替「第一帧出来再进游戏」。 */
+export function noteGameLoadStage(stage) {
+  const next = BOOT_PROGRESS[stage];
+  if (!next || !state.show || state.phase !== 'loading' || state.progress >= next) return;
+  state = { ...state, progress: next };
   emit();
 }
 
@@ -131,6 +144,7 @@ export function markGameLoadCriticalReady() {
     criticalReady: true,
     warmupDone: true,
     statusHint: '',
+    progress: 100,
   };
   emit();
   tryScheduleFinish();
@@ -139,10 +153,12 @@ export function markGameLoadCriticalReady() {
 /** Canvas 内上报 useProgress */
 export function updateGameLoadAssets({ active, progress, loaded, total }) {
   if (!state.show || state.phase === 'hidden') return;
+  const reported = Math.min(100, Math.round(progress));
   state = {
     ...state,
     assetsActive: active,
-    progress: Math.min(100, Math.round(progress)),
+    // 没有在拉的资源时保留首屏阶段进度，避免被 0 盖掉
+    progress: total > 0 ? Math.max(state.progress, reported) : state.progress,
     loaded,
     total,
   };

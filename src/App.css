@@ -26,6 +26,7 @@
   min-height: 0;
   aspect-ratio: auto;
   cursor: grab;
+  background: #0a0c10;
 }
 
 /* R3F 画布随窗口缩放，避免拖拽改变大小时高度塌成 0 */
@@ -935,7 +936,6 @@ html.gpu-accel .wulai-bits {
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-  animation: game-load-in 0.28s ease-out both;
   cursor: pointer;
 }
 
@@ -949,7 +949,6 @@ html.gpu-accel .wulai-bits {
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse 80% 60% at 50% 40%, #2a3544 0%, #12161c 55%, #0a0c10 100%);
-  opacity: 0.96;
 }
 
 .game-load__panel {
@@ -1028,15 +1027,6 @@ html.gpu-accel .wulai-bits {
   margin: 10px 0 0;
   font-size: 12px;
   color: rgba(200, 212, 224, 0.55);
-}
-
-@keyframes game-load-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
 }
 
 @keyframes game-load-out {
