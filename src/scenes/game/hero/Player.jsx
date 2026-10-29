@@ -18,7 +18,7 @@ import { pointerDeltaForView } from '../mobile/viewRotationCoords';
 import Person from '../../lowpoly/person/index';
 import { LOCO_RIG } from '../../lowpoly/person/rigs';
 import { ULT_SKILL_NAME } from '../../../config/lore';
-import { HALF, SPAWN, terrainHeight, terrainNormal } from '../maps/huangshan/heightfield';
+import { BORDER_OUT, HALF, SPAWN, terrainHeight, terrainNormal } from '../maps/huangshan/heightfield';
 import { resolvePlayerObstacles } from '../maps/huangshan/obstacles';
 import NitroFlame from '../NitroFlame';
 import {
@@ -801,6 +801,10 @@ export default function Player({ lightRef, skidRef, lineRef }) {
             skillZoom),
       )
       .add(tmp.target);
+    // 镜头不要探出外圈地形，否则贴着空气墙能看见地面断面
+    const camLimit = HALF + BORDER_OUT - 16;
+    tmp.camPos.x = clamp(tmp.camPos.x, -camLimit, camLimit);
+    tmp.camPos.z = clamp(tmp.camPos.z, -camLimit, camLimit);
     tmp.camPos.y = Math.max(tmp.camPos.y, terrainHeight(tmp.camPos.x, tmp.camPos.z) + 0.8);
     if (fx.shake > 0) {
       tmp.camPos.x += (Math.random() - 0.5) * fx.shake * 0.7;

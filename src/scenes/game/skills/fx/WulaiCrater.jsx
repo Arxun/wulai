@@ -6,7 +6,7 @@ import { FxLight } from '../../fx/FxLight';
 import { makeFxBatch } from './fxBatch';
 import { MOVES } from '../../../../lib/animation/combatMoves';
 import { world } from '../../stores/combatStore';
-import { terrainHeight } from '../../maps/huangshan/heightfield';
+import { groundMeshHeight } from '../../maps/huangshan/heightfield';
 
 /**
  * 武来砸地后留在落点的深坑：停留 5 秒。
@@ -95,6 +95,29 @@ function makeCrackStrip(len, width, segs, seed, taper = 0.72) {
   return g;
 }
 
+function ensureBase(geo) {
+  if (!geo.userData.base) geo.userData.base = new Float32Array(geo.attributes.position.array);
+  return geo.userData.base;
+}
+
+/** 把网格按落点附近的可见地面重新铺一遍。sink 是相对地表的高度，负值埋进山里。 */
+function writeDraped(geo, ox, oz, lift, map) {
+  const base = ensureBase(geo);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const { x, z, sink } = map(base[i * 3], base[i * 3 + 1], base[i * 3 + 2]);
+    pos.setXYZ(i, x, groundMeshHeight(ox + x, oz + z) + sink + lift, z);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+}
+
+function sit(mesh) {
+  mesh.position.set(0, 0, 0);
+  mesh.rotation.set(0, 0, 0);
+  mesh.scale.set(1, 1, 1);
+}
+
 export default function WulaiCrater() {
   const root = useRef();
   useSkillFxWarmupRoot(root, { tier: 'ult' });
@@ -115,6 +138,7 @@ export default function WulaiCrater() {
   const burst = useRef();
   const light = useRef();
   const light2 = useRef();
+  const laid = useRef({ x: NaN, z: NaN, r: NaN, h: 0, rocks: [] });
 
   const seeds = useMemo(
     () => ({
@@ -137,14 +161,15 @@ export default function WulaiCrater() {
     return {
       bowl: makeBowlGeo(),
       pool: new THREE.CircleGeometry(1, 32),
+      poolHot: new THREE.CircleGeometry(1, 32),
       glow: new THREE.CircleGeometry(1, 28),
       rim: new THREE.RingGeometry(0.98, 1.22, 40),
       rimGlow: new THREE.RingGeometry(0.9, 1.06, 36),
       burst: new THREE.RingGeometry(0.2, 0.55, 20),
       cracks,
       forks,
-      veins: cracks,
-      forkVeins: forks,
+      veins: cracks.map((g) => g.clone()),
+      forkVeins: forks.map((g) => g.clone()),
     };
   }, []);
 
@@ -238,80 +263,116 @@ export default function WulaiCrater() {
     const pulse = 0.68 + 0.32 * Math.sin(clock * 8.4);
     const burstK = Math.max(0, Math.sin(clock * 3.1));
     const r = pit.r;
+    const centerH = groundMeshHeight(pit.x, pit.z);
+    root.current.position.set(pit.x, 0, pit.z);
 
-    root.current.position.set(pit.x, terrainHeight(pit.x, pit.z) + 0.02, pit.z);
-
-    if (bowl.current) bowl.current.scale.set(r, 1, r);
-    if (pool.current) {
-      const s = r * (0.3 + 0.05 * pulse);
-      pool.current.scale.set(s, s, 1);
-      pool.current.position.y = -1.58;
-      pool.current.material.opacity = 0.98 * fade * pulse;
-    }
-    if (poolHot.current) {
-      const s = r * (0.16 + 0.05 * pulse);
-      poolHot.current.scale.set(s, s, 1);
-      poolHot.current.position.y = -1.54;
-      poolHot.current.material.opacity = 0.7 * fade * pulse;
-    }
-    if (glow.current) {
-      const s = r * (0.86 + 0.08 * pulse);
-      glow.current.scale.set(s, s, 1);
-      glow.current.material.opacity = 0.38 * fade * pulse;
-    }
-    if (rim.current) rim.current.scale.set(r, r, 1);
-    if (rimGlow.current) {
-      rimGlow.current.scale.set(r * (1 + 0.04 * pulse), r * (1 + 0.04 * pulse), 1);
-      rimGlow.current.material.opacity = 0.32 * fade * pulse;
-    }
-
-    if (cracks.current) {
-      cracks.current.children.forEach((m, i) => {
+    if (laid.current.x !== pit.x || laid.current.z !== pit.z || laid.current.r !== r) {
+      const drapeDisc = (mesh, radius, sink, lift) => {
+        if (!mesh) return;
+        writeDraped(mesh.geometry, pit.x, pit.z, lift, (x, y) => ({
+          x: x * radius,
+          z: -y * radius,
+          sink,
+        }));
+        sit(mesh);
+      };
+      const drapeStrip = (mesh, ang, len, zScale, px, pz, lift) => {
+        const theta = -ang;
+        const cos = Math.cos(theta);
+        const sin = Math.sin(theta);
+        writeDraped(mesh.geometry, pit.x, pit.z, lift, (x0, y0, z0) => {
+          const x = x0 * len;
+          const z = z0 * zScale;
+          return { x: px + x * cos + z * sin, z: pz - x * sin + z * cos, sink: y0 };
+        });
+        sit(mesh);
+      };
+      if (bowl.current) {
+        writeDraped(bowl.current.geometry, pit.x, pit.z, 0.06, (x, y, z) => ({
+          x: x * r,
+          z: z * r,
+          sink: y - 0.18,
+        }));
+        sit(bowl.current);
+      }
+      drapeDisc(pool.current, r * 0.3, -1.56, 0.02);
+      drapeDisc(poolHot.current, r * 0.16, -1.52, 0.04);
+      drapeDisc(glow.current, r * 0.86, 0, 0.05);
+      drapeDisc(rim.current, r, 0, 0.07);
+      drapeDisc(rimGlow.current, r, 0, 0.09);
+      drapeDisc(burst.current, r, 0, 0.12);
+      cracks.current?.children.forEach((m, i) => {
         const ang = seeds.crack[i] * Math.PI * 2;
         const len = r * (0.95 + (i % 5) * 0.22 + hash(i + 8) * 0.2);
-        m.position.set(Math.cos(ang) * r * 0.22, 0.03, Math.sin(ang) * r * 0.22);
-        m.rotation.set(0, -ang, 0);
-        m.scale.set(len, 1, 1 + (i % 3) * 0.35);
-        if (m.material) m.material.opacity = 0.82 * fade;
+        drapeStrip(m, ang, len, 1 + (i % 3) * 0.35, Math.cos(ang) * r * 0.22, Math.sin(ang) * r * 0.22, 0.08);
       });
-    }
-    if (forks.current) {
-      forks.current.children.forEach((m, i) => {
+      forks.current?.children.forEach((m, i) => {
         const seed = seeds.fork[i];
         const parent = Math.floor(seed * CRACKS);
-        const base = seeds.crack[parent] * Math.PI * 2;
-        const ang = base + (seed - 0.5) * 1.1;
+        const baseAng = seeds.crack[parent] * Math.PI * 2;
+        const ang = baseAng + (seed - 0.5) * 1.1;
         const along = 0.35 + seed * 0.45;
-        const len = r * (0.42 + seed * 0.38);
-        m.position.set(Math.cos(base) * r * along, 0.032, Math.sin(base) * r * along);
-        m.rotation.set(0, -ang, 0);
-        m.scale.set(len, 1, 0.9);
-        if (m.material) m.material.opacity = 0.7 * fade;
+        drapeStrip(m, ang, r * (0.42 + seed * 0.38), 0.9, Math.cos(baseAng) * r * along, Math.sin(baseAng) * r * along, 0.08);
       });
-    }
-    if (veins.current) {
-      veins.current.children.forEach((m, i) => {
+      veins.current?.children.forEach((m, i) => {
         const ang = seeds.crack[i] * Math.PI * 2;
         const len = r * (0.9 + (i % 5) * 0.2);
-        m.position.set(Math.cos(ang) * r * 0.22, 0.045, Math.sin(ang) * r * 0.22);
-        m.rotation.set(0, -ang, 0);
-        m.scale.set(len, 1, 0.55 + pulse * 0.35);
-        if (m.material) m.material.opacity = 0.85 * fade * pulse;
+        drapeStrip(m, ang, len, 0.75, Math.cos(ang) * r * 0.22, Math.sin(ang) * r * 0.22, 0.1);
       });
-    }
-    if (forkVeins.current) {
-      forkVeins.current.children.forEach((m, i) => {
+      forkVeins.current?.children.forEach((m, i) => {
         const seed = seeds.fork[i];
         const parent = Math.floor(seed * CRACKS);
-        const base = seeds.crack[parent] * Math.PI * 2;
-        const ang = base + (seed - 0.5) * 1.1;
+        const baseAng = seeds.crack[parent] * Math.PI * 2;
+        const ang = baseAng + (seed - 0.5) * 1.1;
         const along = 0.35 + seed * 0.45;
-        m.position.set(Math.cos(base) * r * along, 0.048, Math.sin(base) * r * along);
-        m.rotation.set(0, -ang, 0);
-        m.scale.set(r * (0.4 + seed * 0.35), 1, 0.5 + pulse * 0.3);
-        if (m.material) m.material.opacity = 0.7 * fade * pulse;
+        drapeStrip(m, ang, r * (0.4 + seed * 0.35), 0.65, Math.cos(baseAng) * r * along, Math.sin(baseAng) * r * along, 0.1);
       });
+      laid.current = {
+        x: pit.x,
+        z: pit.z,
+        r,
+        h: centerH,
+        rocks: seeds.rock.map((seed) => {
+          const a = seed * Math.PI * 2;
+          const rad = r * (0.88 + seed * 0.38);
+          const x = Math.cos(a) * rad;
+          const z = Math.sin(a) * rad;
+          return {
+            x,
+            y: groundMeshHeight(pit.x + x, pit.z + z) + 0.1 + seed * 0.22,
+            z,
+            sx: 0.35 + seed * 0.85,
+            sy: 0.22 + seed * 0.4,
+            sz: 0.4 + seed * 0.7,
+            rot: a + seed,
+          };
+        }),
+      };
     }
+
+    const pulseXZ = (mesh, s) => {
+      if (mesh) mesh.scale.set(s, 1, s);
+    };
+    pulseXZ(pool.current, 0.86 + 0.16 * pulse);
+    pulseXZ(poolHot.current, 0.82 + 0.2 * pulse);
+    pulseXZ(glow.current, 0.94 + 0.08 * pulse);
+    pulseXZ(rimGlow.current, 1 + 0.04 * pulse);
+    if (pool.current) pool.current.material.opacity = 0.98 * fade * pulse;
+    if (poolHot.current) poolHot.current.material.opacity = 0.7 * fade * pulse;
+    if (glow.current) glow.current.material.opacity = 0.38 * fade * pulse;
+    if (rimGlow.current) rimGlow.current.material.opacity = 0.32 * fade * pulse;
+    cracks.current?.children.forEach((m) => {
+      if (m.material) m.material.opacity = 0.82 * fade;
+    });
+    forks.current?.children.forEach((m) => {
+      if (m.material) m.material.opacity = 0.7 * fade;
+    });
+    veins.current?.children.forEach((m) => {
+      if (m.material) m.material.opacity = 0.85 * fade * pulse;
+    });
+    forkVeins.current?.children.forEach((m) => {
+      if (m.material) m.material.opacity = 0.7 * fade * pulse;
+    });
 
     if (columns.current) {
       batch.columns.items.forEach((m, i) => {
@@ -319,7 +380,7 @@ export default function WulaiCrater() {
         const a = seed * Math.PI * 2 + clock * 0.15;
         const rad = r * (0.05 + (i % 3) * 0.06);
         const h = (1.4 + (i % 3) * 0.7 + pulse * 0.9 + burstK * 0.8) * fade;
-        m.position.set(Math.cos(a) * rad, -0.4 + h * 0.5, Math.sin(a) * rad);
+        m.position.set(Math.cos(a) * rad, centerH - 0.38 + h * 0.5, Math.sin(a) * rad);
         m.scale.set(0.7 + pulse * 0.35, h, 0.7 + pulse * 0.35);
         m.opacity = (0.45 + pulse * 0.4) * fade;
       });
@@ -333,7 +394,7 @@ export default function WulaiCrater() {
         const a = seed * Math.PI * 2;
         const rad = r * (0.04 + seed * 0.22);
         const up = lifeT * (3.4 + seed * 3.8);
-        m.position.set(Math.cos(a) * rad, -1.05 + up, Math.sin(a) * rad);
+        m.position.set(Math.cos(a) * rad, centerH - 1.03 + up, Math.sin(a) * rad);
         m.scale.setScalar((1 - lifeT) * (0.7 + seed * 1.3) * (0.8 + burstK * 0.5));
         m.rotation.x += 0.18;
         m.rotation.z += 0.1;
@@ -349,7 +410,7 @@ export default function WulaiCrater() {
         const a = seed * Math.PI * 2;
         const fly = 0.15 + lifeT * r * (0.35 + seed * 0.45);
         const up = Math.sin(lifeT * Math.PI) * (1.6 + seed * 1.8);
-        m.position.set(Math.cos(a) * fly, -0.2 + up, Math.sin(a) * fly);
+        m.position.set(Math.cos(a) * fly, centerH - 0.18 + up, Math.sin(a) * fly);
         m.scale.setScalar((1 - lifeT * 0.6) * (0.45 + seed * 0.7));
         m.opacity = (1 - lifeT) * 0.9 * fade;
       });
@@ -357,42 +418,41 @@ export default function WulaiCrater() {
     }
 
     if (burst.current) {
-      const s = r * (0.25 + burstK * 0.55);
-      burst.current.scale.set(s, s, 1);
-      burst.current.position.y = 0.12 + burstK * 0.35;
+      const s = 0.25 + burstK * 0.55;
+      burst.current.scale.set(s, 1, s);
+      burst.current.position.y = burstK * 0.35;
       burst.current.material.opacity = 0.55 * burstK * fade;
     }
 
     if (rocks.current) {
       batch.rocks.items.forEach((m, i) => {
-        const seed = seeds.rock[i];
-        const a = seed * Math.PI * 2;
-        const rad = r * (0.88 + seed * 0.38);
-        m.position.set(Math.cos(a) * rad, 0.06 + seed * 0.28, Math.sin(a) * rad);
-        m.scale.set(0.35 + seed * 0.85, 0.22 + seed * 0.4, 0.4 + seed * 0.7);
-        m.rotation.set(0.25, a + seed, 0.2);
+        const p = laid.current.rocks[i];
+        if (!p) return;
+        m.position.set(p.x, p.y, p.z);
+        m.scale.set(p.sx, p.sy, p.sz);
+        m.rotation.set(0.25, p.rot, 0.2);
       });
       batch.rocks.sync();
     }
 
     if (light.current) {
       light.current.intensity = (10 + pulse * 8 + burstK * 6) * fade;
-      light.current.position.set(0, 0.55, 0);
+      light.current.position.set(0, centerH + 0.57, 0);
     }
     if (light2.current) {
       light2.current.intensity = (4 + pulse * 3) * fade;
-      light2.current.position.set(0, -0.4, 0);
+      light2.current.position.set(0, centerH - 0.38, 0);
     }
   });
 
   return (
     <group ref={root} visible={false}>
       <mesh ref={bowl} geometry={geo.bowl} material={mat.bowl} />
-      <mesh ref={pool} geometry={geo.pool} material={mat.pool} rotation={[-Math.PI / 2, 0, 0]} />
-      <mesh ref={poolHot} geometry={geo.pool} material={mat.poolHot} rotation={[-Math.PI / 2, 0, 0]} />
-      <mesh ref={glow} geometry={geo.glow} material={mat.glow} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} />
-      <mesh ref={rim} geometry={geo.rim} material={mat.rim} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} />
-      <mesh ref={rimGlow} geometry={geo.rimGlow} material={mat.rimGlow} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]} />
+      <mesh ref={pool} geometry={geo.pool} material={mat.pool} />
+      <mesh ref={poolHot} geometry={geo.poolHot} material={mat.poolHot} />
+      <mesh ref={glow} geometry={geo.glow} material={mat.glow} />
+      <mesh ref={rim} geometry={geo.rim} material={mat.rim} />
+      <mesh ref={rimGlow} geometry={geo.rimGlow} material={mat.rimGlow} />
 
       <group ref={cracks}>
         {geo.cracks.map((g, i) => (
@@ -416,7 +476,7 @@ export default function WulaiCrater() {
       </group>
 
       <primitive ref={columns} object={batch.columns.mesh} />
-      <mesh ref={burst} geometry={geo.burst} material={mat.burst} rotation={[-Math.PI / 2, 0, 0]} />
+      <mesh ref={burst} geometry={geo.burst} material={mat.burst} />
       <primitive ref={jets} object={batch.jets.mesh} />
       <primitive ref={drops} object={batch.drops.mesh} />
       <primitive ref={rocks} object={batch.rocks.mesh} />

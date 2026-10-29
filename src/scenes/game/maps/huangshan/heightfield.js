@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { bump, fbm2, ridged2 } from '../../../../lib/math/noise';
+import { getGamePerf } from '../../config/perf';
 
 /**
  * 游戏地图的高度场：一条蜿蜒的山路穿过山谷，四周被山脊环抱，西北角有一座主峰。
@@ -11,6 +12,8 @@ import { bump, fbm2, ridged2 } from '../../../../lib/math/noise';
 /** 地图尺寸（米），玩家活动范围是 ±(HALF - 5) */
 export const MAP_SIZE = 260;
 export const HALF = MAP_SIZE / 2;
+/** 空气墙外再铺出去的地形，让镜头贴边时还踩在山坡上 */
+export const BORDER_OUT = 64;
 
 /** 出生点（谷底山路边），周围抬成一块石台 */
 export const SPAWN = [-4, 12];
@@ -142,4 +145,28 @@ export function terrainNormal(x, z, eps = 0.6) {
 /** 坡度（0 平地，1 垂直） */
 export function slopeAt(x, z) {
   return 1 - terrainNormal(x, z).y;
+}
+
+/**
+ * 可见地面网格在 (x, z) 的高度。
+ * 顶点和 terrainHeight 一致，格子内部按 PlaneGeometry 的对角线做插值，
+ * 贴花贴这个高度才不会和网格穿插。出了主网格就退回高度场。
+ */
+export function groundMeshHeight(x, z) {
+  const seg = getGamePerf().terrainSegments;
+  const cell = MAP_SIZE / seg;
+  const fx = (x + HALF) / cell;
+  const fz = (HALF - z) / cell;
+  if (fx < 0 || fz < 0 || fx > seg || fz > seg) return terrainHeight(x, z);
+  const ix = Math.min(seg - 1, Math.floor(Math.max(0, fx)));
+  const iy = Math.min(seg - 1, Math.floor(Math.max(0, fz)));
+  const tx = fx - ix;
+  const ty = fz - iy;
+  const at = (i, j) => terrainHeight(-HALF + i * cell, HALF - j * cell);
+  const ha = at(ix, iy);
+  const hb = at(ix, iy + 1);
+  const hc = at(ix + 1, iy + 1);
+  const hd = at(ix + 1, iy);
+  if (tx + ty <= 1) return ha * (1 - tx - ty) + hd * tx + hb * ty;
+  return hd * (1 - ty) + hb * (1 - tx) + hc * (tx + ty - 1);
 }

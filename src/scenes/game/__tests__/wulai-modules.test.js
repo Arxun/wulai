@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { resetMoves, tickMoves } from '../../../lib/animation/combatMoves';
 import { HERO } from '../hero/def';
-import { SPAWN, terrainHeight } from '../maps/huangshan/heightfield';
+import { HALF, MAP_SIZE, SPAWN, groundMeshHeight, terrainHeight } from '../maps/huangshan/heightfield';
 import { resolvePlayerObstacles, SU7_SPAWN } from '../maps/huangshan/obstacles';
 import { activeMap, DEFAULT_MAP_ID, getMapId, MAPS, setMapId } from '../maps/registry';
 import { MONSTER_KINDS } from '../monsters/kinds';
@@ -57,6 +57,14 @@ describe('地图模块 maps/', () => {
   it('出生点高度为有限数值', () => {
     const y = terrainHeight(SPAWN[0], SPAWN[1]);
     expect(Number.isFinite(y)).toBe(true);
+  });
+
+  it('地面网格顶点高度和高度场一致', () => {
+    const seg = 176;
+    const cell = MAP_SIZE / seg;
+    const x = -HALF + 40 * cell;
+    const z = HALF - 20 * cell;
+    expect(groundMeshHeight(x, z)).toBeCloseTo(terrainHeight(x, z), 5);
   });
 });
 
