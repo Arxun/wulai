@@ -8,6 +8,12 @@ export function readViewportPx() {
   };
 }
 
+/** 设备视口本身是否竖屏（与页面旋转角无关） */
+export function isPortraitViewport() {
+  const { vw, vh } = readViewportPx();
+  return vh > vw;
+}
+
 /**
  * @param {number} rotationDeg 0 | 90 | 180 | 270 顺时针
  */

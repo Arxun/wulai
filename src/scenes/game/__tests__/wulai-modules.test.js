@@ -344,3 +344,30 @@ describe('怪物合批 monsters/monsterBatch', () => {
     }
   });
 });
+
+describe('游戏会话 stores/gameSession', () => {
+  it('Canvas remount 沿用同一份人物状态与战斗数据，只有 resetGameSession 才重置', async () => {
+    const { getPlayerState, resetGameSession } = await import('../stores/gameSession');
+    const { combat } = await import('../stores/combatStore');
+    let created = 0;
+    const make = () => {
+      created += 1;
+      return { pos: { x: -4, z: 12 } };
+    };
+    const a = getPlayerState(make);
+    a.pos.x = 30;
+    combat.level = 7;
+    combat.weapon = 'iron';
+    const b = getPlayerState(make);
+    expect(b).toBe(a);
+    expect(created).toBe(1);
+    expect(combat.level).toBe(7);
+
+    resetGameSession();
+    expect(combat.level).toBe(1);
+    expect(combat.weapon).toBe('wood');
+    const c = getPlayerState(make);
+    expect(c).not.toBe(a);
+    expect(c.pos.x).toBe(-4);
+  });
+});

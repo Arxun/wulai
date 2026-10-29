@@ -43,7 +43,6 @@ import {
   NITRO_COST,
   NITRO_MAX,
   drift,
-  resetDrift,
   tryActivateNitro,
 } from '../stores/driftStore';
 import {
@@ -60,13 +59,13 @@ import {
   fx,
   healTo,
   MP_REGEN_PER_SEC,
-  resetCombat,
   statsAt,
   tryPickup,
   usePotion,
   world,
 } from '../stores/combatStore';
 import { guardFrame } from '../debug/reportError';
+import { getPlayerState } from '../stores/gameSession';
 import {
   CAR_SIT_POSE,
   START_IN_SU7,
@@ -237,9 +236,8 @@ export default function Player({ lightRef, skidRef, lineRef }) {
 
   vehicle.poseRef = poseRef;
 
-  const sRef = useRef(null);
-  if (!sRef.current) {
-    sRef.current = {
+  const s = getPlayerState(() => {
+    const init = {
     pos: new THREE.Vector3(START[0], terrainHeight(START[0], START[1]), START[1]),
     vel: new THREE.Vector3(),
     yaw: Math.PI,
@@ -274,26 +272,15 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     wulaiEffDist: 5.2,
     };
     if (START_IN_SU7) {
-      enterSu7(sRef.current);
-      sRef.current.camYaw = sRef.current.yaw;
+      enterSu7(init);
+      init.camYaw = init.yaw;
     }
-  }
-  const s = sRef.current;
+    return init;
+  });
 
+  // Canvas remount 时沿用会话里的状态；只清掉跟旧画布绑定的拖拽手势
   useEffect(() => {
-    resetDrift();
-    resetCombat();
-    if (START_IN_SU7) enterSu7(s);
-    else {
-      vehicle.inCar = false;
-      vehicle.near = false;
-    }
-    return () => {
-      resetDrift();
-      resetCombat();
-      vehicle.inCar = false;
-      vehicle.near = false;
-    };
+    s.dragging = false;
   }, [s]);
 
   // 鼠标拖动转视角 + 滚轮缩放

@@ -11,7 +11,7 @@ import { setGamePerfMobile } from './scenes/game/config/perf';
 import { applyGpuAccelDomClass, buildCanvasGlOptions } from './scenes/game/lib/gpuAccel';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
-import { computeMobileViewLayout, mobileCanvasKey } from './scenes/game/mobile/mobileViewLayout';
+import { computeMobileViewLayout, isPortraitViewport, mobileCanvasKey } from './scenes/game/mobile/mobileViewLayout';
 import './App.css';
 
 const GameCanvasInner = lazy(() => import('./scenes/game/GameCanvasInner'));
@@ -86,14 +86,17 @@ export default function App() {
   const [showRef, setShowRef] = useState(urlParam.bool('ref', true));
   const [autoRotate, setAutoRotate] = useState(urlParam.bool('auto', mode === 'lowpoly'));
   const [overlay, setOverlay] = useState(urlParam.number('overlay', 0));
-  const [viewRotation, setViewRotation] = useState(0);
+  const gameMobile = useGameMobile();
+  const [viewRotation, setViewRotation] = useState(() =>
+    initialMode === 'game' && gameMobile.active && isPortraitViewport() ? 90 : 0,
+  );
   const [viewportTick, setViewportTick] = useState(0);
 
   const cfg = MODES[mode];
   const isGame = mode === 'game';
   const isLowPoly = mode === 'lowpoly';
-  const gameMobile = useGameMobile();
   const mobileGame = isGame && gameMobile.active;
+  const portrait = mobileGame && isPortraitViewport();
   const mobileViewLayout = mobileGame ? computeMobileViewLayout(viewRotation) : null;
   const canvasKey = mobileCanvasKey(viewRotation, mobileGame);
   useMobileInputGuard(mobileGame);
@@ -101,6 +104,12 @@ export default function App() {
   useLayoutEffect(() => {
     setGamePerfMobile(mobileGame);
   }, [mobileGame]);
+
+  // 只在横竖屏切换时自动摆正：竖屏转 90°，转回横屏归零；其间手动旋转不受影响
+  useLayoutEffect(() => {
+    if (!mobileGame) return;
+    setViewRotation(portrait ? 90 : 0);
+  }, [mobileGame, portrait]);
 
   useEffect(() => {
     if (!mobileGame) return;
@@ -125,10 +134,13 @@ export default function App() {
       beginGameLoad();
       void import('./scenes/game/GameCanvasInner');
       void import('./scenes/game/GameModeUi');
-    } else {
-      document.documentElement.classList.remove('gpu-accel', 'gpu-software');
-      resetGameLoad();
+      // 一局只在离开游戏模式时结束；旋转 / 布局切换导致的 Canvas remount 不算
+      return () => {
+        void import('./scenes/game/stores/gameSession').then((m) => m.resetGameSession());
+      };
     }
+    document.documentElement.classList.remove('gpu-accel', 'gpu-software');
+    resetGameLoad();
   }, [isGame]);
 
   const panelItems = [

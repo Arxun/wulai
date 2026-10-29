@@ -32,7 +32,8 @@ export default function IdleDeferredLoad() {
     const st = getGameLoadingState();
     if (st.phase === 'hidden' || st.phase === 'enter') start();
 
-    const unsub = subscribeGameLoading((s) => {
+    const unsub = subscribeGameLoading(() => {
+      const s = getGameLoadingState();
       if (s.phase === 'enter' || s.phase === 'hidden') start();
     });
 

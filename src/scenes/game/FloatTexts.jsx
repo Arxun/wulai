@@ -9,6 +9,29 @@ import { floats } from './stores/combatStore';
  */
 
 const POOL = 28;
+/** 纹理缓存上限：伤害数字几乎不重复，不封顶会一直涨显存；须大于 POOL，保证在用的不被淘汰 */
+const TEX_CACHE_MAX = 64;
+
+/** LRU：命中时挪到队尾，超出上限淘汰最久没用的并释放显存 */
+function getTex(cache, text, color) {
+  const key = `${text}|${color}`;
+  let tex = cache.get(key);
+  if (tex) {
+    cache.delete(key);
+  } else {
+    tex = makeTex(text, color);
+    if (cache.size >= TEX_CACHE_MAX) {
+      for (const [oldKey, oldTex] of cache) {
+        if (floats.some((f) => f.tex === oldTex)) continue;
+        cache.delete(oldKey);
+        oldTex.dispose();
+        break;
+      }
+    }
+  }
+  cache.set(key, tex);
+  return tex;
+}
 
 function makeTex(text, color) {
   const c = document.createElement('canvas');
@@ -49,15 +72,10 @@ export default function FloatTexts() {
         spr.visible = false;
         continue;
       }
-      if (!f.tex) {
-        const key = `${f.text}|${f.color}`;
-        let tex = cache.get(key);
-        if (!tex) {
-          tex = makeTex(f.text, f.color);
-          cache.set(key, tex);
-        }
-        f.tex = tex;
-        spr.material.map = tex;
+      if (!f.tex) f.tex = getTex(cache, f.text, f.color);
+      // floats 过期会整体前移，同一个 sprite 下一帧可能对应另一条飘字
+      if (spr.material.map !== f.tex) {
+        spr.material.map = f.tex;
         spr.material.needsUpdate = true;
       }
       const t = f.age / f.life;
