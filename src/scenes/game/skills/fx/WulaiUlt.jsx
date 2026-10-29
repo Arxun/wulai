@@ -49,7 +49,7 @@ function boltBetween(mesh, ax, ay, az, bx, by, bz, fat) {
 
 export default function WulaiUlt() {
   const root = useRef();
-  useSkillFxWarmupRoot(root);
+  useSkillFxWarmupRoot(root, { tier: 'ult' });
   const avatar = useRef();
   const ring = useRef();
   const ringPurp = useRef();

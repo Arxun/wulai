@@ -246,6 +246,8 @@ describe('诊断 debug/（自检）', () => {
     const g = new THREE.Group();
     markSkillFxWarmupRoot(g);
     expect(g.userData.wulaiSkillFxWarmup).toBe(true);
+    markSkillFxWarmupRoot(g, { tier: 'ult' });
+    expect(g.userData.wulaiSkillFxWarmupTier).toBe('ult');
   });
 
   it('guardFrame 吞掉 useFrame 内异常', () => {

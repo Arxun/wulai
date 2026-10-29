@@ -17,6 +17,20 @@ export default function WulaiTitle() {
   const bits = useRef();
 
   useEffect(() => {
+    const el = root.current;
+    if (el) {
+      el.style.visibility = 'hidden';
+      el.style.display = 'flex';
+      requestAnimationFrame(() => {
+        if (root.current) {
+          root.current.style.display = 'none';
+          root.current.style.visibility = '';
+        }
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     let raf = 0;
     const tick = () => {
       const on = world.move === 'wulai';

@@ -95,7 +95,7 @@ function makeCrackStrip(len, width, segs, seed, taper = 0.72) {
 
 export default function WulaiCrater() {
   const root = useRef();
-  useSkillFxWarmupRoot(root);
+  useSkillFxWarmupRoot(root, { tier: 'ult' });
   const bowl = useRef();
   const pool = useRef();
   const poolHot = useRef();

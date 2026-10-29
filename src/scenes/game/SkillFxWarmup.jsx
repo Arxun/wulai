@@ -2,12 +2,18 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useRef } from 'react';
 import { getGamePerf, isGamePerfMobile } from './config/perf';
 import { runWhenIdle } from './lib/runWhenIdle';
-import { countSkillFxWarmupRoots, warmupSkillFxShaders } from './debug/warmupShaders';
+import {
+  countSkillFxWarmupRoots,
+  countUltSkillFxWarmupRoots,
+  warmupSkillFxShaders,
+} from './debug/warmupShaders';
 import {
   completeGameLoadWarmup,
   getGameLoadingState,
   markGameLoadWarmupStarted,
 } from './stores/gameLoadingStore';
+
+const ULT_WARMUP_ROOTS = 2;
 
 /** 进图后在 idle 预热技能着色器，不挡首屏 */
 export default function SkillFxWarmup() {
@@ -30,8 +36,10 @@ export default function SkillFxWarmup() {
     if (frames.current < minFrames) return;
 
     const roots = countSkillFxWarmupRoots(scene);
-    const maxWait = mobile ? 45 : 24;
+    const ultRoots = countUltSkillFxWarmupRoots(scene);
+    const maxWait = mobile ? 72 : 48;
     if (roots < 1 && frames.current < maxWait) return;
+    if (ultRoots < ULT_WARMUP_ROOTS && frames.current < maxWait) return;
 
     running.current = true;
     if (perf.gateLoadingOnSkillWarmup && !startedHint.current) {
@@ -48,6 +56,13 @@ export default function SkillFxWarmup() {
         const n = await warmupSkillFxShaders(gl, scene, camera, {
           fullScene: perf.skillWarmupFullScene,
         });
+        if (ultRoots >= ULT_WARMUP_ROOTS) {
+          await runWhenIdle(() => {}, { timeout: mobile ? 280 : 120 });
+          const nu = await warmupSkillFxShaders(gl, scene, camera, { tier: 'ult' });
+          if (import.meta.env.DEV) {
+            console.info('[武来·warmup] 大招特效已预热', { roots: nu });
+          }
+        }
         if (n > 0 && import.meta.env.DEV) {
           console.info('[武来·warmup] 技能着色器已预热', { roots: n });
         }
