@@ -806,21 +806,24 @@ html.gpu-accel .wulai-bits {
   color: #ffd166;
 }
 
-.chud--folded .chud-toast {
-  left: 8px;
-  top: 72px;
+.game-toast {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(14, 18, 24, 0.78);
+  color: #ffe08a;
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
-.chud-toast {
-  position: absolute;
-  left: 76px;
-  top: 118px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: rgba(14, 18, 24, 0.72);
-  color: #ffe08a;
-  font-size: 12px;
-  white-space: nowrap;
+/* 让出顶部居中的「旋转」按钮 */
+.game-toast--mobile {
+  top: calc(max(10px, env(safe-area-inset-top, 0px)) + 46px);
 }
 
 .chud-side {

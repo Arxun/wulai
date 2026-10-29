@@ -15,7 +15,7 @@ export const MODES = {
   game: {
     label: GAME_TITLE,
     tag: `${GAME_TITLE} · ${HERO_NAME} · 黄山步道`,
-    hint: `连按 J 刺/劈/砍/旋 · 空中 J 下砸 · E 回旋斩 · K 崩击 · L ${ULT_SKILL_NAME}（大招） · 靠近 SU7 按 F 上下车 · 拾取 Q/W 吃药`,
+    hint: `连按 J 刺/劈/砍/旋 · 空中 J 下砸 · E 回旋斩 · K 崩击 · R ${ULT_SKILL_NAME}（大招） · 靠近 SU7 按 F 上下车 · 拾取 Q 吃药`,
     camera: { fov: 55, position: [6, 6, 76], near: 0.1, far: 1100 },
   },
 };

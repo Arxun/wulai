@@ -137,7 +137,6 @@ export default function CombatHud({ mobileCompact = false }) {
           </div>
         )}
       </div>
-      {combat.toastAge > 0 && <div className="chud-toast">{combat.toast}</div>}
       {!mobileCompact && !folded && (
         <div className="chud-side">
           <div className="chud-bag">

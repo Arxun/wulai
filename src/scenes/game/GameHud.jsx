@@ -40,6 +40,7 @@ export default function GameHud({ mobileActive = false }) {
           skill: fx.skill,
           nearCar: vehicle.near,
           inCar: vehicle.inCar,
+          toast: combat.toastAge > 0 ? combat.toast : '',
         }),
       50,
     );
@@ -64,6 +65,7 @@ export default function GameHud({ mobileActive = false }) {
       <div className={`skillflash${v.skill > 0 ? ' on' : ''}`} />
       <WulaiTitle />
       <DeathQuote />
+      {v.toast && <div className={`game-toast${mobileActive ? ' game-toast--mobile' : ''}`}>{v.toast}</div>}
       {!mobileActive && v.inCar && <div className="hud-flash interact">按 F 下车</div>}
       {!mobileActive && !v.inCar && v.nearCar && <div className="hud-flash interact">按 F 上车</div>}
       <div className={`hud-left${mobileActive ? ' hud-left--mobile' : ''}`}>
