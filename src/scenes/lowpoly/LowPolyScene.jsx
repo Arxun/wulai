@@ -3,6 +3,7 @@ import PostFX from '../../lib/components/PostFX';
 import SkyDome from '../../lib/components/SkyDome';
 import { urlParam } from '../../lib/hooks/useUrlParams';
 import Person from './person/index';
+import { FxLightPool } from '../game/fx/FxLight';
 import Pines from './Pines';
 import Railing from './Railing';
 import Terrain from './Terrain';
@@ -41,6 +42,7 @@ export default function LowPolyScene() {
         shadow-radius={6}
       />
       <directionalLight position={[4, 2.5, 3]} intensity={0.4} color="#dfe8f0" />
+      <FxLightPool />
 
       {/* 程序化环境光：顶部大柔光箱 + 两侧灯条 + 地面暖色反光 */}
       <Environment resolution={128} frames={1} environmentIntensity={0.55}>

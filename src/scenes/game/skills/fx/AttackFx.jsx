@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useSkillFxWarmupRoot } from '../../debug/useSkillFxWarmupRoot';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { FxLight } from '../../fx/FxLight';
 import { moveOf, moveProgress } from '../../../../lib/animation/combatMoves';
 import { combat, world } from '../../stores/combatStore';
 
@@ -149,7 +150,7 @@ export default function AttackFx() {
       <mesh ref={spin} geometry={geo.ring} material={mat.spin} rotation={[Math.PI / 2, 0, 0]} position={[0, 0.95, 0]} visible={false} />
       <mesh ref={plunge} geometry={geo.pillar} material={mat.plunge} visible={false} />
       <mesh ref={shock} geometry={geo.shock} material={mat.shock} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0.2]} visible={false} />
-      <pointLight ref={light} color="#fff4d2" intensity={0} distance={6} decay={2} />
+      <FxLight ref={light} color="#fff4d2" intensity={0} distance={6} decay={2} />
     </group>
   );
 }

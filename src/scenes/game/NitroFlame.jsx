@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { FxLight } from './fx/FxLight';
 import { vehicle } from './vehicles/runtime';
 
 /** 氮气喷火：步行挂在玩家身后；开车挂在 SU7 车尾（+Z 前进，火往 -Z） */
@@ -147,7 +148,7 @@ export default function NitroFlame({ stateRef, variant = 'onFoot' }) {
         ))}
       </group>
 
-      <pointLight
+      <FxLight
         ref={light}
         position={[lx - ax, ly - ay, lz - az]}
         color="#ff8a3c"

@@ -7,6 +7,8 @@ import { resolvePlayerObstacles, SU7_SPAWN } from '../maps/huangshan/obstacles';
 import { activeMap, DEFAULT_MAP_ID, getMapId, MAPS, setMapId } from '../maps/registry';
 import { MONSTER_KINDS } from '../monsters/kinds';
 import { getMonsterPack } from '../monsters/pack';
+import { buildMonsterBatches, MONSTER_LAYOUT } from '../monsters/monsterBatch';
+import { makeMonsterGeo } from '../monsters/monsterMeshes';
 import { VEHICLE_DEFS, DEFAULT_VEHICLE_ID, activeVehicleSpeedMult, vehicle } from '../vehicles';
 import { SU7_VEHICLE } from '../vehicles/su7/def';
 import {
@@ -29,6 +31,7 @@ import {
 import * as THREE from 'three';
 import { resetDrift, drift, NITRO_MAX, tryActivateNitro, BOOST_TIME } from '../stores/driftStore';
 import { combat, world } from '../stores/combatStore';
+import { FX_LIGHT_SLOTS, pickFxLights, requestFxLight, resetFxLights } from '../fx/fxLightStore';
 import { vehicle as vehicleRuntime } from '../vehicles/runtime';
 
 describe('地图模块 maps/', () => {
@@ -224,6 +227,33 @@ describe('漂移 driftStore', () => {
   });
 });
 
+describe('共享点光池 fx/fxLightStore', () => {
+  const c = new THREE.Color('#ffffff');
+
+  it('只点亮分数最高的 FX_LIGHT_SLOTS 个请求', () => {
+    resetFxLights();
+    for (let i = 0; i < FX_LIGHT_SLOTS + 3; i++) requestFxLight(`k${i}`, 0, 0, 0, c, i + 1, 10, 2);
+    const picked = pickFxLights(0, 0, 0);
+    expect(picked.length).toBe(FX_LIGHT_SLOTS);
+    expect(picked[0].intensity).toBe(FX_LIGHT_SLOTS + 3);
+  });
+
+  it('不再提交的请求在下一帧之后被清掉', () => {
+    resetFxLights();
+    requestFxLight('a', 0, 0, 0, c, 2, 10, 2);
+    expect(pickFxLights(0, 0, 0).length).toBe(1);
+    expect(pickFxLights(0, 0, 0).length).toBe(1);
+    expect(pickFxLights(0, 0, 0).length).toBe(0);
+  });
+
+  it('离镜头近的请求优先于同亮度的远处请求', () => {
+    resetFxLights();
+    requestFxLight('far', 200, 0, 0, c, 2, 3, 2);
+    requestFxLight('near', 1, 0, 0, c, 2, 3, 2);
+    expect(pickFxLights(0, 0, 0, 1)[0].x).toBe(1);
+  });
+});
+
 describe('诊断 debug/（自检）', () => {
   it('vehicles/runtime 独立加载且 inCar 为布尔', () => {
     expect(vehicleRuntime).toBeTruthy();
@@ -274,5 +304,43 @@ describe('诊断 debug/（自检）', () => {
     });
     expect(() => wrapped()).not.toThrow();
     expect(calls).toBe(1);
+  });
+});
+
+describe('怪物合批 monsters/monsterBatch', () => {
+  const geo = makeMonsterGeo();
+  const batches = buildMonsterBatches(geo);
+
+  it('每种出场怪都有布局，合批后顶点数 = 零件顶点数之和', () => {
+    const kinds = new Set(getMonsterPack().map((m) => m.kind));
+    for (const kind of kinds) {
+      expect(MONSTER_LAYOUT[kind], kind).toBeTruthy();
+      const expected = MONSTER_LAYOUT[kind].parts.reduce((n, p) => n + geo[kind][p.g].attributes.position.count, 0);
+      const got = batches[kind].reduce((n, b) => n + b.geometry.attributes.position.count, 0);
+      expect(got, kind).toBe(expected);
+      const roughs = new Set(MONSTER_LAYOUT[kind].parts.map((p) => p.rough));
+      expect(batches[kind].length, kind).toBe(roughs.size);
+    }
+  });
+
+  it('镜像零件烘焙后三角形绕序与法线一致（不会被背面剔除）', () => {
+    for (const [kind, list] of Object.entries(batches)) {
+      for (const { geometry } of list) {
+        const pos = geometry.attributes.position.array;
+        const nor = geometry.attributes.normal.array;
+        let bad = 0;
+        let total = 0;
+        for (let t = 0; t < pos.length; t += 9) {
+          const ux = pos[t + 3] - pos[t], uy = pos[t + 4] - pos[t + 1], uz = pos[t + 5] - pos[t + 2];
+          const vx = pos[t + 6] - pos[t], vy = pos[t + 7] - pos[t + 1], vz = pos[t + 8] - pos[t + 2];
+          const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
+          if (Math.hypot(cx, cy, cz) < 1e-9) continue;
+          total++;
+          if (cx * nor[t] + cy * nor[t + 1] + cz * nor[t + 2] < 0) bad++;
+        }
+        expect(bad, kind).toBe(0);
+        expect(total).toBeGreaterThan(0);
+      }
+    }
   });
 });

@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useSkillFxWarmupRoot } from '../../debug/useSkillFxWarmupRoot';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { FxLight } from '../../fx/FxLight';
 import { moveProgress } from '../../../../lib/animation/combatMoves';
 import { world } from '../../stores/combatStore';
 
@@ -148,7 +149,7 @@ export default function WhirlFx() {
           <mesh key={i} geometry={geo.spark} material={m} />
         ))}
       </group>
-      <pointLight ref={light} color="#ffe8a0" intensity={0} distance={8} decay={2} />
+      <FxLight ref={light} color="#ffe8a0" intensity={0} distance={8} decay={2} />
     </group>
   );
 }

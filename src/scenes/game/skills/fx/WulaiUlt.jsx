@@ -2,6 +2,8 @@ import { useMemo, useRef } from 'react';
 import { useSkillFxWarmupRoot } from '../../debug/useSkillFxWarmupRoot';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { FxLight } from '../../fx/FxLight';
+import { makeFxBatch } from './fxBatch';
 import { movePose, moveProgress } from '../../../../lib/animation/combatMoves';
 import { ZERO_POSE } from '../../../../lib/animation/gait';
 import Person from '../../../lowpoly/person/index';
@@ -82,9 +84,6 @@ export default function WulaiUlt() {
   );
   const geo = useMemo(
     () => ({
-      shard: new THREE.TetrahedronGeometry(0.08),
-      spark: new THREE.TetrahedronGeometry(0.045),
-      bolt: new THREE.BoxGeometry(1, 1, 1),
       ring: new THREE.RingGeometry(0.65, 1.08, 40),
       wave: new THREE.RingGeometry(0.32, 0.7, 42),
       trail: new THREE.TorusGeometry(1, 0.05, 6, 36),
@@ -101,12 +100,6 @@ export default function WulaiUlt() {
       ember: addMat('#ff7a22'),
       purp: addMat('#8a6dff'),
       wave: addMat('#fff1b0'),
-      rise: Array.from({ length: RISE }, (_, i) => addMat(i % 3 === 0 ? '#9a7cff' : '#ffd056', 0.85)),
-      burst: Array.from({ length: BURST }, (_, i) => addMat(i % 2 ? '#c8b4ff' : '#ffe08a', 0.9)),
-      lavaBits: Array.from({ length: LAVA }, () => addMat('#ff2a0a', 0.9)),
-      rocks: Array.from({ length: ROCK }, () => addMat('#8a5a32', 0.75)),
-      arc: Array.from({ length: ARCS }, (_, i) => addMat(i % 2 ? '#b8a6ff' : '#7d5cff', 0.7)),
-      body: Array.from({ length: BODY_ARCS }, () => addMat('#8a6dff', 0.4)),
       crack: Array.from({ length: CRACKS }, () => new THREE.MeshBasicMaterial({
         color: '#140806',
         transparent: true,
@@ -125,6 +118,20 @@ export default function WulaiUlt() {
     }),
     [],
   );
+  const batch = useMemo(() => {
+    const spark = () => new THREE.TetrahedronGeometry(0.045);
+    const shard = () => new THREE.TetrahedronGeometry(0.08);
+    const bolt = () => new THREE.BoxGeometry(1, 1, 1);
+    const colors = (n, pick) => Array.from({ length: n }, (_, i) => pick(i));
+    return {
+      rise: makeFxBatch(spark(), addMat('#ffffff', 1), colors(RISE, (i) => (i % 3 === 0 ? '#9a7cff' : '#ffd056')), { opacity: 0.85 }),
+      burst: makeFxBatch(shard(), addMat('#ffffff', 1), colors(BURST, (i) => (i % 2 ? '#c8b4ff' : '#ffe08a')), { opacity: 0.9 }),
+      lava: makeFxBatch(spark(), addMat('#ffffff', 1), colors(LAVA, () => '#ff2a0a'), { opacity: 0.9 }),
+      rock: makeFxBatch(shard(), addMat('#ffffff', 1), colors(ROCK, () => '#8a5a32'), { opacity: 0.75 }),
+      arcs: makeFxBatch(bolt(), addMat('#ffffff', 1), colors(ARCS, (i) => (i % 2 ? '#b8a6ff' : '#7d5cff')), { opacity: 0.7 }),
+      bodyArcs: makeFxBatch(bolt(), addMat('#ffffff', 1), colors(BODY_ARCS, () => '#8a6dff'), { opacity: 0.4 }),
+    };
+  }, []);
 
   useFrame((state) => {
     const on = world.move === 'wulai';
@@ -243,33 +250,35 @@ export default function WulaiUlt() {
 
     if (rise.current) {
       rise.current.visible = sec >= 0.85 && sec < 2.85;
-      rise.current.children.forEach((m, i) => {
+      batch.rise.items.forEach((m, i) => {
         const seed = seeds.rise[i];
         const life = (clock * 0.7 + seed) % 1;
         const a = seed * Math.PI * 2;
         const rad = 0.35 + seed * 1.25;
         m.position.set(Math.cos(a) * rad, life * 4.2 * Math.max(p2, 0.15), Math.sin(a) * rad - 0.7);
         m.scale.setScalar((1 - life) * (0.35 + seed) * (1 - p4));
-        if (m.material) m.material.opacity = (1 - life) * (0.7 + seed * 0.3) * (1 - p4);
+        m.opacity = (1 - life) * (0.7 + seed * 0.3) * (1 - p4);
       });
+      batch.rise.sync();
     }
 
     if (burst.current) {
       burst.current.visible = p1 > 0.02;
-      burst.current.children.forEach((m, i) => {
+      batch.burst.items.forEach((m, i) => {
         const seed = seeds.burst[i];
         const a = seed * Math.PI * 2;
         const rad = 0.25 + p1 * (2.2 + seed * 2.8);
         m.position.set(Math.cos(a) * rad, 0.1 + seed * 0.55, Math.sin(a) * rad);
         m.scale.setScalar((1 - p1 * 0.35) * (0.45 + seed));
-        if (m.material) m.material.opacity = (1 - p1 * 0.2) * 0.9;
+        m.opacity = (1 - p1 * 0.2) * 0.9;
       });
+      batch.burst.sync();
     }
 
     if (lava.current) {
       lava.current.visible = p3 > 0.05 || (p4 > 0 && p4 < 0.55);
       const k = p3 > 0 ? p3 : 1 - p4;
-      lava.current.children.forEach((m, i) => {
+      batch.lava.items.forEach((m, i) => {
         const seed = seeds.lava[i];
         const a = seed * Math.PI * 2;
         const rad = 0.6 + k * (5.5 + seed * 4);
@@ -278,11 +287,12 @@ export default function WulaiUlt() {
         m.scale.setScalar((0.5 + seed) * (1 - k * 0.3));
         m.rotation.x += 0.1;
       });
+      batch.lava.sync();
     }
 
     if (rock.current) {
       rock.current.visible = p3 > 0.06;
-      rock.current.children.forEach((m, i) => {
+      batch.rock.items.forEach((m, i) => {
         const seed = seeds.rock[i];
         const a = seed * Math.PI * 2 + 0.4;
         const rad = 0.5 + p3 * (4.2 + seed * 3.5);
@@ -290,6 +300,7 @@ export default function WulaiUlt() {
         m.scale.setScalar((1 - p3) * (0.7 + seed));
         m.rotation.y += 0.07;
       });
+      batch.rock.sync();
     }
 
     const flicker = Math.sin(clock * 38) > -0.15;
@@ -297,7 +308,7 @@ export default function WulaiUlt() {
       const show = sec >= 0.9 && sec < 2.85 && flicker;
       arcs.current.visible = show;
       if (show) {
-        arcs.current.children.forEach((m, i) => {
+        batch.arcs.items.forEach((m, i) => {
           const a0 = clock * (2.1 + i * 0.17) + i;
           const a1 = a0 + 0.7 + (i % 3) * 0.4;
           const y0 = 0.45 + (i % 4) * 0.32;
@@ -305,8 +316,9 @@ export default function WulaiUlt() {
           const r0 = 0.22 + (i % 3) * 0.12;
           const r1 = 0.2 + ((i + 1) % 3) * 0.12;
           boltBetween(m, Math.cos(a0) * r0, y0, Math.sin(a0) * r0, Math.cos(a1) * r1, y1, Math.sin(a1) * r1, 0.018 + (i % 2) * 0.01);
-          if (m.material) m.material.opacity = 0.55 + 0.4 * Math.sin(clock * 24 + i);
+          m.opacity = 0.55 + 0.4 * Math.sin(clock * 24 + i);
         });
+        batch.arcs.sync();
       }
     }
 
@@ -314,7 +326,7 @@ export default function WulaiUlt() {
       const show = sec >= 0.4 && sec < 2.95 && flicker;
       bodyArcs.current.visible = show;
       if (show) {
-        bodyArcs.current.children.forEach((m, i) => {
+        batch.bodyArcs.items.forEach((m, i) => {
           const a0 = clock * 4 + i * 1.1;
           const a1 = a0 + 0.9;
           boltBetween(
@@ -327,8 +339,9 @@ export default function WulaiUlt() {
             Math.sin(a1) * 0.24,
             0.012,
           );
-          if (m.material) m.material.opacity = 0.35 + p1 * 0.4;
+          m.opacity = 0.35 + p1 * 0.4;
         });
+        batch.bodyArcs.sync();
       }
     }
 
@@ -370,41 +383,17 @@ export default function WulaiUlt() {
 
       <group ref={avatar} visible={false} position={[0, 0, -1.55]}>
         <Person ghost poseRef={poseRef} rig={LOCO_RIG} idle={false} />
-        <group ref={arcs}>
-          {mat.arc.map((m, i) => (
-            <mesh key={i} geometry={geo.bolt} material={m} />
-          ))}
-        </group>
+        <primitive ref={arcs} object={batch.arcs.mesh} />
       </group>
 
-      <group ref={rise}>
-        {mat.rise.map((m, i) => (
-          <mesh key={i} geometry={geo.spark} material={m} />
-        ))}
-      </group>
-      <group ref={burst}>
-        {mat.burst.map((m, i) => (
-          <mesh key={i} geometry={geo.shard} material={m} />
-        ))}
-      </group>
-      <group ref={lava}>
-        {mat.lavaBits.map((m, i) => (
-          <mesh key={i} geometry={geo.spark} material={m} />
-        ))}
-      </group>
-      <group ref={rock}>
-        {mat.rocks.map((m, i) => (
-          <mesh key={i} geometry={geo.shard} material={m} />
-        ))}
-      </group>
-      <group ref={bodyArcs}>
-        {mat.body.map((m, i) => (
-          <mesh key={i} geometry={geo.bolt} material={m} />
-        ))}
-      </group>
+      <primitive ref={rise} object={batch.rise.mesh} />
+      <primitive ref={burst} object={batch.burst.mesh} />
+      <primitive ref={lava} object={batch.lava.mesh} />
+      <primitive ref={rock} object={batch.rock.mesh} />
+      <primitive ref={bodyArcs} object={batch.bodyArcs.mesh} />
 
-      <pointLight ref={light} color="#ffd056" intensity={0} distance={24} decay={2} />
-      <pointLight ref={lightArc} color="#7a5cff" intensity={0} distance={16} decay={2} />
+      <FxLight ref={light} color="#ffd056" intensity={0} distance={24} decay={2} />
+      <FxLight ref={lightArc} color="#7a5cff" intensity={0} distance={16} decay={2} />
     </group>
   );
 }

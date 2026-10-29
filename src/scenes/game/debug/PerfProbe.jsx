@@ -66,6 +66,7 @@ export default function PerfProbe({ auto = false }) {
   };
 
   useEffect(() => {
+    window.__perfScene = scene;
     if (!auto) {
       beginSeg('manual');
       const id = setInterval(() => {

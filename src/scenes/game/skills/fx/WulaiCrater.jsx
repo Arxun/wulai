@@ -2,6 +2,8 @@ import { useMemo, useRef } from 'react';
 import { useSkillFxWarmupRoot } from '../../debug/useSkillFxWarmupRoot';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { FxLight } from '../../fx/FxLight';
+import { makeFxBatch } from './fxBatch';
 import { MOVES } from '../../../../lib/animation/combatMoves';
 import { world } from '../../stores/combatStore';
 import { terrainHeight } from '../../maps/huangshan/heightfield';
@@ -138,10 +140,6 @@ export default function WulaiCrater() {
       glow: new THREE.CircleGeometry(1, 28),
       rim: new THREE.RingGeometry(0.98, 1.22, 40),
       rimGlow: new THREE.RingGeometry(0.9, 1.06, 36),
-      spark: new THREE.TetrahedronGeometry(0.11),
-      blob: new THREE.SphereGeometry(0.08, 6, 5),
-      shard: new THREE.TetrahedronGeometry(0.2),
-      column: new THREE.CylinderGeometry(0.12, 0.04, 1, 6, 1, true),
       burst: new THREE.RingGeometry(0.2, 0.55, 20),
       cracks,
       forks,
@@ -169,15 +167,6 @@ export default function WulaiCrater() {
         side: THREE.DoubleSide,
       }),
       rimGlow: addMat('#ff4a12', 0.35),
-      jet: Array.from({ length: JETS }, (_, i) => addMat(i % 3 === 0 ? '#ffe08a' : i % 3 === 1 ? '#ff5a12' : '#ff2208', 0.95)),
-      drop: Array.from({ length: DROPS }, (_, i) => addMat(i % 2 ? '#ff7a18' : '#ffd056', 0.9)),
-      rock: Array.from({ length: ROCKS }, (_, i) =>
-        new THREE.MeshStandardMaterial({
-          color: i % 3 ? '#4a2e1a' : '#2e1a10',
-          roughness: 0.92,
-          flatShading: true,
-        }),
-      ),
       crack: Array.from({ length: CRACKS }, () =>
         new THREE.MeshBasicMaterial({
           color: '#0a0402',
@@ -198,11 +187,39 @@ export default function WulaiCrater() {
       ),
       vein: Array.from({ length: CRACKS }, () => addMat('#ff2a08')),
       forkVein: Array.from({ length: FORKS }, () => addMat('#ff6a18')),
-      column: Array.from({ length: 5 }, (_, i) => addMat(i % 2 ? '#ff3a0a' : '#ffb428', 0.8)),
       burst: addMat('#ff8a22', 0.5),
     }),
     [],
   );
+  const batch = useMemo(() => {
+    const colors = (n, pick) => Array.from({ length: n }, (_, i) => pick(i));
+    return {
+      jets: makeFxBatch(
+        new THREE.TetrahedronGeometry(0.11),
+        addMat('#ffffff', 1),
+        colors(JETS, (i) => (i % 3 === 0 ? '#ffe08a' : i % 3 === 1 ? '#ff5a12' : '#ff2208')),
+        { opacity: 0.95 },
+      ),
+      drops: makeFxBatch(
+        new THREE.SphereGeometry(0.08, 6, 5),
+        addMat('#ffffff', 1),
+        colors(DROPS, (i) => (i % 2 ? '#ff7a18' : '#ffd056')),
+        { opacity: 0.9 },
+      ),
+      rocks: makeFxBatch(
+        new THREE.TetrahedronGeometry(0.2),
+        new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.92, flatShading: true }),
+        colors(ROCKS, (i) => (i % 3 ? '#4a2e1a' : '#2e1a10')),
+        { alpha: false },
+      ),
+      columns: makeFxBatch(
+        new THREE.CylinderGeometry(0.12, 0.04, 1, 6, 1, true),
+        addMat('#ffffff', 1),
+        colors(5, (i) => (i % 2 ? '#ff3a0a' : '#ffb428')),
+        { opacity: 0.8 },
+      ),
+    };
+  }, []);
 
   useFrame((state) => {
     const pit = world.crater;
@@ -297,19 +314,20 @@ export default function WulaiCrater() {
     }
 
     if (columns.current) {
-      columns.current.children.forEach((m, i) => {
+      batch.columns.items.forEach((m, i) => {
         const seed = 0.12 + i * 0.17;
         const a = seed * Math.PI * 2 + clock * 0.15;
         const rad = r * (0.05 + (i % 3) * 0.06);
         const h = (1.4 + (i % 3) * 0.7 + pulse * 0.9 + burstK * 0.8) * fade;
         m.position.set(Math.cos(a) * rad, -0.4 + h * 0.5, Math.sin(a) * rad);
         m.scale.set(0.7 + pulse * 0.35, h, 0.7 + pulse * 0.35);
-        if (m.material) m.material.opacity = (0.45 + pulse * 0.4) * fade;
+        m.opacity = (0.45 + pulse * 0.4) * fade;
       });
+      batch.columns.sync();
     }
 
     if (jets.current) {
-      jets.current.children.forEach((m, i) => {
+      batch.jets.items.forEach((m, i) => {
         const seed = seeds.jet[i];
         const lifeT = (clock * (1.15 + seed * 0.7) + seed) % 1;
         const a = seed * Math.PI * 2;
@@ -319,12 +337,13 @@ export default function WulaiCrater() {
         m.scale.setScalar((1 - lifeT) * (0.7 + seed * 1.3) * (0.8 + burstK * 0.5));
         m.rotation.x += 0.18;
         m.rotation.z += 0.1;
-        if (m.material) m.material.opacity = (1 - lifeT) * fade;
+        m.opacity = (1 - lifeT) * fade;
       });
+      batch.jets.sync();
     }
 
     if (drops.current) {
-      drops.current.children.forEach((m, i) => {
+      batch.drops.items.forEach((m, i) => {
         const seed = seeds.drop[i];
         const lifeT = (clock * (0.7 + seed * 0.45) + seed * 0.6) % 1;
         const a = seed * Math.PI * 2;
@@ -332,8 +351,9 @@ export default function WulaiCrater() {
         const up = Math.sin(lifeT * Math.PI) * (1.6 + seed * 1.8);
         m.position.set(Math.cos(a) * fly, -0.2 + up, Math.sin(a) * fly);
         m.scale.setScalar((1 - lifeT * 0.6) * (0.45 + seed * 0.7));
-        if (m.material) m.material.opacity = (1 - lifeT) * 0.9 * fade;
+        m.opacity = (1 - lifeT) * 0.9 * fade;
       });
+      batch.drops.sync();
     }
 
     if (burst.current) {
@@ -344,7 +364,7 @@ export default function WulaiCrater() {
     }
 
     if (rocks.current) {
-      rocks.current.children.forEach((m, i) => {
+      batch.rocks.items.forEach((m, i) => {
         const seed = seeds.rock[i];
         const a = seed * Math.PI * 2;
         const rad = r * (0.88 + seed * 0.38);
@@ -352,6 +372,7 @@ export default function WulaiCrater() {
         m.scale.set(0.35 + seed * 0.85, 0.22 + seed * 0.4, 0.4 + seed * 0.7);
         m.rotation.set(0.25, a + seed, 0.2);
       });
+      batch.rocks.sync();
     }
 
     if (light.current) {
@@ -394,30 +415,14 @@ export default function WulaiCrater() {
         ))}
       </group>
 
-      <group ref={columns}>
-        {mat.column.map((m, i) => (
-          <mesh key={i} geometry={geo.column} material={m} />
-        ))}
-      </group>
+      <primitive ref={columns} object={batch.columns.mesh} />
       <mesh ref={burst} geometry={geo.burst} material={mat.burst} rotation={[-Math.PI / 2, 0, 0]} />
-      <group ref={jets}>
-        {mat.jet.map((m, i) => (
-          <mesh key={i} geometry={geo.spark} material={m} />
-        ))}
-      </group>
-      <group ref={drops}>
-        {mat.drop.map((m, i) => (
-          <mesh key={i} geometry={geo.blob} material={m} />
-        ))}
-      </group>
-      <group ref={rocks}>
-        {mat.rock.map((m, i) => (
-          <mesh key={i} geometry={geo.shard} material={m} />
-        ))}
-      </group>
+      <primitive ref={jets} object={batch.jets.mesh} />
+      <primitive ref={drops} object={batch.drops.mesh} />
+      <primitive ref={rocks} object={batch.rocks.mesh} />
 
-      <pointLight ref={light} color="#ff4a10" intensity={0} distance={18} decay={2} />
-      <pointLight ref={light2} color="#ffb428" intensity={0} distance={8} decay={2} />
+      <FxLight ref={light} color="#ff4a10" intensity={0} distance={18} decay={2} />
+      <FxLight ref={light2} color="#ffb428" intensity={0} distance={8} decay={2} />
     </group>
   );
 }

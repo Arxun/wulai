@@ -32,30 +32,9 @@ function bossRespawnDelay(spec) {
   return 16 + Math.random() * 14;
 }
 
-export function paintBody(root, { gray, opacity }) {
-  if (!root) return;
-  root.traverse((o) => {
-    if (!o.isMesh || !o.material) return;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    for (const mat of mats) {
-      if (gray) {
-        if (!mat.userData.liveColor) mat.userData.liveColor = mat.color.clone();
-        mat.color.set('#8a8a8a');
-        mat.transparent = true;
-        mat.opacity = opacity;
-        mat.depthWrite = opacity > 0.92;
-      } else if (mat.userData.liveColor) {
-        mat.color.copy(mat.userData.liveColor);
-        mat.transparent = false;
-        mat.opacity = 1;
-        mat.depthWrite = true;
-      }
-    }
-  });
-}
-
 /**
  * 单怪一帧（由 Monsters 根组件统一调用，避免 100+ 个 useFrame）
+ * 死亡变灰 / 淡出不在这里改材质：Monsters 合批时按 m.dead、m.fade 决定走哪一批。
  * @param refs {{ group, body, bar, fill }} 可能尚未 mount
  */
 export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
@@ -77,7 +56,6 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
       group.position.set(m.x, m.y, m.z);
     }
     if (body) {
-      paintBody(body, { gray: true, opacity: k });
       body.scale.setScalar(1);
       body.rotation.z = 0;
     }
@@ -106,7 +84,6 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
       m.hurt = 0;
       m.hitLock = 0;
       m.burnLock = 0;
-      paintBody(body, { gray: false, opacity: 1 });
       if (group) group.visible = true;
     }
     return;
@@ -149,7 +126,6 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
         m.dead = true;
         m.fade = DEATH_FADE;
         m.respawn = bossRespawnDelay(spec);
-        paintBody(body, { gray: true, opacity: 1 });
         gainXp(spec.xp);
         rollDrops(spec.drop, m.x, m.z);
         return;
@@ -169,7 +145,6 @@ export function tickMonster(m, refs, { dt, dtRaw, camera, frame }) {
         m.dead = true;
         m.fade = DEATH_FADE;
         m.respawn = bossRespawnDelay(spec);
-        paintBody(body, { gray: true, opacity: 1 });
         gainXp(spec.xp);
         rollDrops(spec.drop, m.x, m.z);
         return;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { FxLight } from './fx/FxLight';
 import FacetMesh from '../../lib/components/FacetMesh';
 import { makeBlobGeometry } from '../../lib/geometry/organic';
 import { makeLoftGeometry } from '../../lib/geometry/loft';
@@ -140,7 +141,7 @@ function LootMesh({ id, geo }) {
       <group>
         <FacetMesh geometry={geo.frost.shaft} roughness={0.35} metalness={0.25} />
         <FacetMesh geometry={geo.frost.gem} position={[0, 0.44, 0]} roughness={0.15} metalness={0.4} />
-        <pointLight position={[0, 0.46, 0]} color="#9ad8ff" intensity={1.2} distance={2.2} />
+        <FxLight position={[0, 0.46, 0]} color="#9ad8ff" intensity={1.2} distance={2.2} />
       </group>
     );
   }
@@ -149,7 +150,7 @@ function LootMesh({ id, geo }) {
       <group>
         <FacetMesh geometry={geo.ember.shaft} roughness={0.7} />
         <FacetMesh geometry={geo.ember.head} roughness={0.25} />
-        <pointLight position={[0, 0.5, 0]} color="#ff7a2a" intensity={1.6} distance={2.4} />
+        <FxLight position={[0, 0.5, 0]} color="#ff7a2a" intensity={1.6} distance={2.4} />
       </group>
     );
   }
@@ -157,7 +158,7 @@ function LootMesh({ id, geo }) {
     return (
       <group>
         <FacetMesh geometry={geo.storm} roughness={0.12} metalness={0.85} />
-        <pointLight position={[0, 0.36, 0]} color="#9ecbff" intensity={1.3} distance={2.2} />
+        <FxLight position={[0, 0.36, 0]} color="#9ecbff" intensity={1.3} distance={2.2} />
       </group>
     );
   }
@@ -165,7 +166,7 @@ function LootMesh({ id, geo }) {
     return (
       <group>
         <FacetMesh geometry={geo.blood} roughness={0.45} metalness={0.75} />
-        <pointLight position={[0, 0.32, 0]} color="#ff2040" intensity={1.5} distance={2.2} />
+        <FxLight position={[0, 0.32, 0]} color="#ff2040" intensity={1.5} distance={2.2} />
       </group>
     );
   }
@@ -176,7 +177,7 @@ function LootMesh({ id, geo }) {
     <group>
       <FacetMesh geometry={geo.bottle} roughness={0.25} metalness={0.15} tint={tint} />
       <FacetMesh geometry={geo.cork} position={[0, 0.275, 0]} roughness={0.9} />
-      <pointLight position={[0, 0.16, 0]} color={glow} intensity={1.1} distance={1.8} />
+      <FxLight position={[0, 0.16, 0]} color={glow} intensity={1.1} distance={1.8} />
     </group>
   );
 }

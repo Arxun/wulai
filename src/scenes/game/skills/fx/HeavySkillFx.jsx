@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useSkillFxWarmupRoot } from '../../debug/useSkillFxWarmupRoot';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { FxLight } from '../../fx/FxLight';
 import { HEAVY_RANGE, HEAVY_TIME, world } from '../../stores/combatStore';
 
 /**
@@ -166,7 +167,7 @@ export default function HeavySkillFx() {
           <mesh key={i} geometry={geo.spark} material={mat.spark} />
         ))}
       </group>
-      <pointLight ref={light} color="#ffd056" intensity={0} distance={9} decay={2} />
+      <FxLight ref={light} color="#ffd056" intensity={0} distance={9} decay={2} />
     </group>
   );
 }

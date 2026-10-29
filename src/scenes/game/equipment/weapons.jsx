@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { FxLight } from '../fx/FxLight';
 import FacetMesh from '../../../lib/components/FacetMesh';
 import { makeBlobGeometry } from '../../../lib/geometry/organic';
 import { makeLoftGeometry } from '../../../lib/geometry/loft';
@@ -118,7 +119,7 @@ function FrostStaff() {
     <group>
       <FacetMesh geometry={g.pole} roughness={0.35} metalness={0.25} />
       <FacetMesh geometry={g.crystal} position={[0, 0.8, 0]} roughness={0.15} metalness={0.4} />
-      <pointLight position={[0, 0.82, 0]} color="#9ad8ff" intensity={1.6} distance={2.4} />
+      <FxLight position={[0, 0.82, 0]} color="#9ad8ff" intensity={1.6} distance={2.4} />
     </group>
   );
 }
@@ -153,7 +154,7 @@ function EmberSpear() {
     <group>
       <FacetMesh geometry={g.pole} roughness={0.7} />
       <FacetMesh geometry={g.head} roughness={0.25} metalness={0.2} />
-      <pointLight position={[0, 1.0, 0]} color="#ff7a2a" intensity={2.4} distance={3.2} />
+      <FxLight position={[0, 1.0, 0]} color="#ff7a2a" intensity={2.4} distance={3.2} />
     </group>
   );
 }
@@ -406,8 +407,8 @@ function BloodSword() {
           </mesh>
         ))}
       </group>
-      <pointLight ref={glowA} position={[0, 0.62, 0]} color="#ff2040" intensity={2.4} distance={3.6} />
-      <pointLight ref={glowB} position={[0, 0.18, 0]} color="#ff3a50" intensity={1.1} distance={2.2} />
+      <FxLight ref={glowA} position={[0, 0.62, 0]} color="#ff2040" intensity={2.4} distance={3.6} />
+      <FxLight ref={glowB} position={[0, 0.18, 0]} color="#ff3a50" intensity={1.1} distance={2.2} />
     </group>
   );
 }
@@ -446,7 +447,7 @@ function StormBlade() {
         <boxGeometry args={[0.09, 0.018, 0.03]} />
         <meshStandardMaterial color="#c9a24a" roughness={0.35} metalness={0.6} flatShading />
       </mesh>
-      <pointLight position={[0, 0.62, 0]} color="#9ecbff" intensity={1.8} distance={2.6} />
+      <FxLight position={[0, 0.62, 0]} color="#9ecbff" intensity={1.8} distance={2.6} />
     </group>
   );
 }

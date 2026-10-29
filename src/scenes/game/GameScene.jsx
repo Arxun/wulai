@@ -14,6 +14,7 @@ import { Monsters } from './monsters';
 import GameDiagnostics from './GameDiagnostics';
 import SkillFxWarmup from './SkillFxWarmup';
 import PerfProbe from './debug/PerfProbe';
+import { FxLightPool } from './fx/FxLight';
 
 const PERF_PARAM = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('perf') : null;
 
@@ -49,6 +50,7 @@ function GameSceneInner() {
         shadow-normalBias={0.03}
       />
       <directionalLight position={[40, 20, -30]} intensity={0.35} color="#dce8f2" />
+      <FxLightPool />
 
       <GameTerrain />
       <Scatter />
