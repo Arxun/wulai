@@ -89,7 +89,9 @@ function buildBorder(pos, colors, eps) {
   };
   const sample = (x, z) => {
     const y = terrainHeight(x, z);
-    writeTerrainColor(dstC, dstC.length, x, z, y, eps);
+    const hRight = terrainHeight(x + eps, z);
+    const hUp = terrainHeight(x, z + eps);
+    writeTerrainColor(dstC, dstC.length, x, z, y, eps, hRight, hUp);
     const id = dstP.length / 3;
     dstP.push(x, y, z);
     return id;

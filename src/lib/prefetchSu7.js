@@ -2,8 +2,8 @@ import { SU7_CAR } from '../config/assets';
 import { publicUrl } from './publicUrl';
 
 /**
- * 进图时低优先级把 SU7 和 Draco 解码器拉进缓存。
- * 不解码、不上传 GPU，所以不拖首屏；车挂上场景时文件已经在本地。
+ * 场景脚本到齐后再把 SU7 和 Draco 拉进缓存。
+ * 用 prefetch，不和首屏脚本抢连接；不解码、不上传 GPU。
  */
 export function prefetchSu7() {
   if (prefetchSu7.started || typeof document === 'undefined') return;
@@ -21,7 +21,7 @@ export function prefetchSu7() {
 
   for (const href of urls) {
     const link = document.createElement('link');
-    link.rel = 'preload';
+    link.rel = 'prefetch';
     link.as = 'fetch';
     link.href = href;
     link.crossOrigin = 'anonymous';

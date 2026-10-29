@@ -135,8 +135,11 @@ export default function App() {
     if (isGame) {
       applyGpuAccelDomClass();
       beginGameLoad();
-      prefetchSu7();
-      void import('./scenes/game/GameCanvasInner').then(() => noteGameLoadStage('chunk'));
+      // 场景模块到齐后再拉车，避免和首屏脚本抢连接
+      void import('./scenes/game/GameCanvasInner').then(() => {
+        noteGameLoadStage('chunk');
+        prefetchSu7();
+      });
       void import('./scenes/game/GameModeUi');
       // 一局只在离开游戏模式时结束；旋转 / 布局切换导致的 Canvas remount 不算
       return () => {
@@ -243,7 +246,7 @@ export default function App() {
   return (
     <div className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}${mobileGame ? ' mobile-game' : ''}`}>
       {mobileGame ? (
-        <Suspense fallback={body}>
+        <Suspense fallback={null}>
           <>
             <MobileRotateFab onRotate={() => setViewRotation((d) => (d + 90) % 360)} />
             <MobileViewRotator enabled layout={mobileViewLayout}>

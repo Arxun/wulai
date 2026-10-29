@@ -19,11 +19,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes('node_modules')) {
-            if (id.includes('/src/scenes/game/')) return 'game';
-            if (id.includes('/src/scenes/lowpoly/')) return 'lowpoly';
-            return undefined;
-          }
+          // 业务代码交给 Rollup 按动态 import 自动拆：game 和 lowpoly/person 互相引用，
+          // 按目录硬拆会形成循环包，生产环境报 "Cannot access ... before initialization"
+          if (!id.includes('node_modules')) return undefined;
           // 勿用 includes('three')：会误匹配 @react-three/fiber
           if (/\/node_modules\/three\//.test(id)) return 'three';
           if (id.includes('@react-three/fiber')) return 'r3f';
