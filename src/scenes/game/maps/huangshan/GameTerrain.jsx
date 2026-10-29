@@ -28,12 +28,10 @@ const COLORS = {
 };
 
 const tmp = new THREE.Color();
+const tmp2 = new THREE.Color();
 
-function writeTerrainColor(out, offset, x, z, h, eps) {
-  const slope = Math.min(
-    1,
-    (Math.abs(terrainHeight(x + eps, z) - h) + Math.abs(terrainHeight(x, z + eps) - h)) / (eps * 1.6),
-  );
+function writeTerrainColor(out, offset, x, z, h, eps, hRight, hUp) {
+  const slope = Math.min(1, (Math.abs(hRight - h) + Math.abs(hUp - h)) / (eps * 1.6));
   const alt = THREE.MathUtils.smoothstep(h, 14, 34);
   const n = fbm2(x * 0.09, z * 0.09, { seed: 21, octaves: 3 });
   const { dist } = nearestPath(x, z);
@@ -44,9 +42,9 @@ function writeTerrainColor(out, offset, x, z, h, eps) {
   tmp.lerp(COLORS.rockHigh, alt * 0.8);
   tmp.lerp(COLORS.snow, THREE.MathUtils.smoothstep(h, 30, 44) * (1 - slope * 0.5));
   const dirtMix = (1 - THREE.MathUtils.smoothstep(dist + n * 0.6, 0.9, 2.3)) * THREE.MathUtils.smoothstep(road, 0, 0.3);
-  tmp.lerp(COLORS.dirt.clone().lerp(COLORS.dirtPale, n), dirtMix);
+  tmp.lerp(tmp2.copy(COLORS.dirt).lerp(COLORS.dirtPale, n), dirtMix);
   const pad = spawnPadFactor(x, z);
-  if (pad > 0.02) tmp.lerp(COLORS.pad.clone().lerp(COLORS.padEdge, 1 - pad), pad);
+  if (pad > 0.02) tmp.lerp(tmp2.copy(COLORS.pad).lerp(COLORS.padEdge, 1 - pad), pad);
   tmp.multiplyScalar(0.92 + hash3(Math.floor(x * 3), Math.floor(z * 3), 0, 9) * 0.16);
   out[offset] = tmp.r;
   out[offset + 1] = tmp.g;
@@ -209,15 +207,23 @@ function Ground() {
     const g = new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE, SEG, SEG);
     g.rotateX(-Math.PI / 2);
     const pos = g.attributes.position;
-    const colors = new Float32Array(pos.count * 3);
+    const grid = SEG + 1;
+    const heights = new Float32Array(pos.count);
     const eps = MAP_SIZE / SEG;
-
+    for (let i = 0; i < pos.count; i++) {
+      const h = terrainHeight(pos.getX(i), pos.getZ(i));
+      heights[i] = h;
+      pos.setY(i, h);
+    }
+    const colors = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const z = pos.getZ(i);
-      const h = terrainHeight(x, z);
-      pos.setY(i, h);
-      writeTerrainColor(colors, i * 3, x, z, h, eps);
+      const ix = i % grid;
+      const iy = (i / grid) | 0;
+      const hRight = ix < SEG ? heights[i + 1] : terrainHeight(x + eps, z);
+      const hUp = iy < SEG ? heights[i + grid] : terrainHeight(x, z + eps);
+      writeTerrainColor(colors, i * 3, x, z, heights[i], eps, hRight, hUp);
     }
     const border = buildBorder(pos, colors, eps);
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));

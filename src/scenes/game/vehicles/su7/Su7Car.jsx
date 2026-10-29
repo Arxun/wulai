@@ -58,9 +58,11 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
     wheelModel.current = hub;
     vehicle.wheelHub = hub;
     vehicle.wheelSpinners = listSu7WheelSpinNodes(hub);
+    vehicle.ready = true;
     return () => {
       vehicle.wheelHub = null;
       vehicle.wheelSpinners = [];
+      vehicle.ready = false;
       wheelModel.current = null;
     };
   }, [scene]);

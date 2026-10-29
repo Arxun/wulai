@@ -2,7 +2,7 @@
 export const MONSTER_KINDS = {
   pebble: {
     name: '青石蟹',
-    hp: 36,
+    hp: 54,
     mp: 0,
     atk: 8,
     def: 4,
@@ -20,7 +20,7 @@ export const MONSTER_KINDS = {
   },
   fox: {
     name: '雾狸',
-    hp: 58,
+    hp: 88,
     mp: 12,
     atk: 14,
     def: 5,
@@ -38,7 +38,7 @@ export const MONSTER_KINDS = {
   },
   crow: {
     name: '赤鸦',
-    hp: 44,
+    hp: 66,
     mp: 8,
     atk: 18,
     def: 3,
@@ -56,7 +56,7 @@ export const MONSTER_KINDS = {
   },
   golem: {
     name: '岩灵',
-    hp: 140,
+    hp: 210,
     mp: 20,
     atk: 20,
     def: 14,
@@ -74,7 +74,7 @@ export const MONSTER_KINDS = {
   },
   oni: {
     name: '山魈',
-    hp: 260,
+    hp: 390,
     mp: 40,
     atk: 34,
     def: 12,
@@ -88,7 +88,7 @@ export const MONSTER_KINDS = {
     hpY: 2.05,
     count: 12,
     zone: { height: [30, 72], minPath: 5, maxSlope: 0.7, near: [-72, -66, 42] },
-    drop: { blood: 0.22, storm: 0.32, ember: 0.2, hp: 1 },
+    drop: { storm: 0.32, ember: 0.2, hp: 1 },
   },
   /** 东北角 Boss：约 Lv10+、中装以上较稳 */
   titan: {

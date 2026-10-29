@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ZERO_POSE } from '../../../lib/animation/gait';
-import { terrainHeight } from '../maps/huangshan/heightfield';
+import { HALF, terrainHeight } from '../maps/huangshan/heightfield';
+import { combat } from '../stores/combatStore';
 import { resolvePlayerObstacles } from '../maps/huangshan/obstacles';
 import { SU7_DRIVER_LOCAL } from './su7/driverSeat';
 import { DEFAULT_VEHICLE_ID, VEHICLE_DEFS } from './registry';
@@ -42,6 +43,8 @@ export const vehicle = {
   sink: spawn.sink,
   scale: spawn.scale,
   driveSpeed: 0,
+  /** Su7Car 挂上场景后为 true；占位模型不算加载完 */
+  ready: false,
   /** Su7Car：`bindSu7WheelModel` 后的 Wheel 组（replica wheelModel） */
   wheelHub: null,
   /** 当前可见、会转的 hub.children（调试 __pl.wheelN） */
@@ -84,6 +87,63 @@ export function distToCarCenter(px, pz) {
 
 export function updateCarProximity(px, pz) {
   vehicle.near = distToCarCenter(px, pz) <= CAR_INTERACT_DIST;
+}
+
+const PLAY_LIMIT = HALF - 5;
+
+/**
+ * 把车放到玩家身侧（优先主驾那一侧），人站在车外、又在上车距离内。
+ * 贴边时换另一侧或车头车尾，避免车心出空气墙。
+ */
+export function summonVehicleBeside(px, pz, yaw) {
+  if (!vehicle.ready || vehicle.inCar) return false;
+  const halfW = (spawn.halfWidth ?? 1.12) * (spawn.scale || 1);
+  const halfL = (spawn.halfLength ?? 2.45) * (spawn.scale || 1);
+  const side = halfW + 0.75;
+  const fore = halfL + 0.85;
+  const fx = Math.sin(yaw);
+  const fz = Math.cos(yaw);
+  const rx = Math.cos(yaw);
+  const rz = -Math.sin(yaw);
+  const spots = [
+    [px + rx * side, pz + rz * side],
+    [px - rx * side, pz - rz * side],
+    [px - fx * fore, pz - fz * fore],
+    [px + fx * fore, pz + fz * fore],
+  ];
+  let pick = null;
+  for (const [x, z] of spots) {
+    if (Math.abs(x) <= PLAY_LIMIT && Math.abs(z) <= PLAY_LIMIT) {
+      pick = [x, z];
+      break;
+    }
+  }
+  if (!pick) {
+    pick = [
+      Math.max(-PLAY_LIMIT, Math.min(PLAY_LIMIT, spots[0][0])),
+      Math.max(-PLAY_LIMIT, Math.min(PLAY_LIMIT, spots[0][1])),
+    ];
+  }
+  vehicle.carX = pick[0];
+  vehicle.carZ = pick[1];
+  vehicle.carYaw = yaw;
+  vehicle.driveSpeed = 0;
+  updateCarProximity(px, pz);
+  return true;
+}
+
+/** 按键和移动端按钮共用：没加载完给提示，已经在车上则不动 */
+export function summonVehicleForPlayer(px, pz, yaw) {
+  if (combat.dead || vehicle.inCar) return false;
+  if (!vehicle.ready) {
+    combat.toast = '载具加载中';
+    combat.toastAge = 1.4;
+    return false;
+  }
+  if (!summonVehicleBeside(px, pz, yaw)) return false;
+  combat.toast = 'SU7 已到身边';
+  combat.toastAge = 2.4;
+  return true;
 }
 
 export function toggleSu7Entry(px, pz, playerState) {

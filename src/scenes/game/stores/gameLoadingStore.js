@@ -2,9 +2,9 @@
 
 import { GAME_PERF } from '../config/perf';
 
-/** 遮罩最短展示（不阻塞玩，只防闪一下） */
+/** 遮罩最短展示（不阻塞玩，只防闪一下）。画面出来之后只短暂停一下再揭开 */
 const MIN_VISIBLE_MS = 180;
-const ENTER_HOLD_MS = 160;
+const ENTER_HOLD_MS = 80;
 
 /** 首屏阶段进度：只涨不降，不等 SU7 */
 const BOOT_PROGRESS = { boot: 8, chunk: 46, canvas: 72 };

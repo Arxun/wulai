@@ -142,9 +142,16 @@ export function terrainNormal(x, z, eps = 0.6) {
   return new THREE.Vector3(hL - hR, 2 * eps, hD - hU).normalize();
 }
 
-/** 坡度（0 平地，1 垂直） */
+const _slope = new THREE.Vector3();
+
+/** 坡度（0 平地，1 垂直）。和 terrainNormal 同一差分，但不每次新建向量 */
 export function slopeAt(x, z) {
-  return 1 - terrainNormal(x, z).y;
+  const eps = 0.6;
+  const hL = terrainHeight(x - eps, z);
+  const hR = terrainHeight(x + eps, z);
+  const hD = terrainHeight(x, z - eps);
+  const hU = terrainHeight(x, z + eps);
+  return 1 - _slope.set(hL - hR, 2 * eps, hD - hU).normalize().y;
 }
 
 /**

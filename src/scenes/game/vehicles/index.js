@@ -13,6 +13,8 @@ export {
   toggleSu7Entry,
   enterSu7,
   exitSu7,
+  summonVehicleBeside,
+  summonVehicleForPlayer,
   activeVehicleSpeedMult,
 } from './runtime';
 export { default as Su7Car } from './su7/Su7Car';

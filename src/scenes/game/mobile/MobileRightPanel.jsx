@@ -5,10 +5,10 @@ import { drift, NITRO_MAX } from '../stores/driftStore';
 import { vehicle } from '../vehicles/runtime';
 import { emitMobilePress, emitMobileRelease, setMobileKey } from './mobileInputStore';
 
-/** 绕普攻键 90° 弧：从下往上 崩 → 回 → 武 → 血（跳在弧外、崩左侧） */
+/** 绕普攻键 90° 弧：从下往上 崩 → E → 武 → 血（跳在弧外、崩左侧） */
 const ARC_SLOTS = [
   { code: 'KeyK', moveId: 'skill' },
-  { code: 'KeyE', moveId: 'whirl', whirl: true },
+  { code: 'KeyE', moveId: 'whirl', whirl: true, label: 'E' },
   { code: 'KeyR', moveId: 'wulai', ult: true },
   { kind: 'pot' },
 ];
@@ -250,7 +250,7 @@ export default function MobileRightPanel() {
           }
           const cd = slot.ult ? snap.wulaiCd : slot.whirl ? snap.whirlCd : 0;
           const onCd = cd > 0;
-          const label = skillInitial(slot.moveId);
+          const label = slot.label || skillInitial(slot.moveId);
           return (
             <button
               key={slot.code}

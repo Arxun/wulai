@@ -6,10 +6,19 @@ import { HALF, MAP_SIZE, SPAWN, groundMeshHeight, terrainHeight } from '../maps/
 import { resolvePlayerObstacles, SU7_SPAWN } from '../maps/huangshan/obstacles';
 import { activeMap, DEFAULT_MAP_ID, getMapId, MAPS, setMapId } from '../maps/registry';
 import { MONSTER_KINDS } from '../monsters/kinds';
+import { pickMonsterOnRay } from '../monsters/pick';
 import { getMonsterPack } from '../monsters/pack';
 import { buildMonsterBatches, MONSTER_LAYOUT } from '../monsters/monsterBatch';
 import { makeMonsterGeo } from '../monsters/monsterMeshes';
-import { VEHICLE_DEFS, DEFAULT_VEHICLE_ID, activeVehicleSpeedMult, vehicle } from '../vehicles';
+import {
+  VEHICLE_DEFS,
+  DEFAULT_VEHICLE_ID,
+  CAR_INTERACT_DIST,
+  activeVehicleSpeedMult,
+  summonVehicleBeside,
+  summonVehicleForPlayer,
+  vehicle,
+} from '../vehicles';
 import { SU7_VEHICLE } from '../vehicles/su7/def';
 import {
   bindSu7WheelModel,
@@ -114,6 +123,55 @@ describe('载具模块 vehicles/', () => {
     expect(vehicle.carYaw).toBe(SU7_SPAWN.rotationY);
   });
 
+  it('召唤把车放到主驾侧，人在车外且够得着上车', () => {
+    const prev = {
+      ready: vehicle.ready,
+      inCar: vehicle.inCar,
+      carX: vehicle.carX,
+      carZ: vehicle.carZ,
+      carYaw: vehicle.carYaw,
+      driveSpeed: vehicle.driveSpeed,
+      near: vehicle.near,
+    };
+    vehicle.ready = true;
+    vehicle.inCar = false;
+    const px = 12;
+    const pz = -8;
+    const yaw = 0.6;
+    const side = SU7_SPAWN.halfWidth * SU7_SPAWN.scale + 0.75;
+    expect(summonVehicleBeside(px, pz, yaw)).toBe(true);
+    expect(vehicle.carX).toBeCloseTo(px + Math.cos(yaw) * side, 5);
+    expect(vehicle.carZ).toBeCloseTo(pz - Math.sin(yaw) * side, 5);
+    expect(vehicle.carYaw).toBe(yaw);
+    const dist = Math.hypot(vehicle.carX - px, vehicle.carZ - pz);
+    expect(dist).toBeLessThanOrEqual(CAR_INTERACT_DIST);
+    expect(resolvePlayerObstacles(px, pz, {
+      car: { carX: vehicle.carX, carZ: vehicle.carZ, carYaw: vehicle.carYaw },
+    }).hit).toBe(false);
+    expect(vehicle.near).toBe(true);
+
+    const edge = HALF - 5;
+    expect(summonVehicleBeside(edge, edge, Math.PI / 4)).toBe(true);
+    expect(Math.abs(vehicle.carX)).toBeLessThanOrEqual(edge);
+    expect(Math.abs(vehicle.carZ)).toBeLessThanOrEqual(edge);
+    expect(Math.hypot(vehicle.carX - edge, vehicle.carZ - edge)).toBeLessThanOrEqual(CAR_INTERACT_DIST);
+
+    vehicle.inCar = true;
+    const parked = vehicle.carX;
+    expect(summonVehicleBeside(0, 0, 0)).toBe(false);
+    expect(vehicle.carX).toBe(parked);
+    vehicle.ready = false;
+    vehicle.inCar = false;
+    expect(summonVehicleBeside(0, 0, 0)).toBe(false);
+    const parkedUnready = vehicle.carX;
+    combat.dead = false;
+    expect(summonVehicleForPlayer(0, 0, 0)).toBe(false);
+    expect(vehicle.carX).toBe(parkedUnready);
+    expect(combat.toast).toBe('载具加载中');
+
+    Object.assign(vehicle, prev);
+  });
+
   it('sm_car.gltf 保留 Wheel 组层级（压缩不能 flatten/join）', () => {
     const gltf = JSON.parse(readFileSync(new URL('../../../../public/models/su7/sm_car.gltf', import.meta.url), 'utf8'));
     const hub = gltf.nodes.find((n) => n.name === 'Wheel');
@@ -158,6 +216,40 @@ describe('怪物 monsters/', () => {
     vehicle.inCar = true;
     expect(vehicle.inCar).toBe(true);
     vehicle.inCar = false;
+  });
+
+  it('地面网格右邻、上邻就是坡度采样点', () => {
+    const SEG = 8;
+    const g = new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE, SEG, SEG);
+    g.rotateX(-Math.PI / 2);
+    const pos = g.attributes.position;
+    const grid = SEG + 1;
+    const eps = MAP_SIZE / SEG;
+    expect(pos.count).toBe(grid * grid);
+    for (let i = 0; i < pos.count; i++) {
+      const ix = i % grid;
+      const iy = (i / grid) | 0;
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      if (ix < SEG) {
+        expect(pos.getX(i + 1)).toBeCloseTo(x + eps, 4);
+        expect(pos.getZ(i + 1)).toBeCloseTo(z, 4);
+      }
+      if (iy < SEG) {
+        expect(pos.getX(i + grid)).toBeCloseTo(x, 4);
+        expect(pos.getZ(i + grid)).toBeCloseTo(z + eps, 4);
+      }
+    }
+    g.dispose();
+  });
+
+  it('鼠标射线打中最近的活怪', () => {
+    const live = { id: 1, kind: 'fox', x: 0, y: 0, z: 0, hp: 10, dead: false };
+    const far = { id: 2, kind: 'fox', x: 0, y: 0, z: -8, hp: 10, dead: false };
+    const dead = { id: 3, kind: 'pebble', x: 0, y: 0, z: 3, hp: 0, dead: true };
+    expect(pickMonsterOnRay(0, 1, 6, 0, 0, -1, [dead, far, live])).toBe(live);
+    expect(pickMonsterOnRay(4, 1, 6, 0, 0, -1, [live])).toBe(null);
+    expect(pickMonsterOnRay(0, 5, 6, 0, 0, -1, [live])).toBe(null);
   });
 
   it('至少三种怪且数值完整', () => {

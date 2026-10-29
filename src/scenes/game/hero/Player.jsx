@@ -20,6 +20,8 @@ import { LOCO_RIG } from '../../lowpoly/person/rigs';
 import { ULT_SKILL_NAME } from '../../../config/lore';
 import { BORDER_OUT, HALF, SPAWN, terrainHeight, terrainNormal } from '../maps/huangshan/heightfield';
 import { resolvePlayerObstacles } from '../maps/huangshan/obstacles';
+import { getMonsterPack } from '../monsters/pack';
+import { pickMonsterOnRay } from '../monsters/pick';
 import NitroFlame from '../NitroFlame';
 import {
   moveOf,
@@ -73,10 +75,11 @@ import {
   enterSu7,
   exitSu7,
   syncCarFromPlayer,
+  summonVehicleForPlayer,
   toggleSu7Entry,
   updateCarProximity,
   vehicle,
-} from '../vehicles';
+} from '../vehicles/runtime';
 
 /**
  * 主角「小武」：键盘走跑 + 漂移攒氮气 + 第三人称跟随相机。
@@ -163,6 +166,10 @@ export default function Player({ lightRef, skidRef, lineRef }) {
           combat.toast = '靠近 SU7 后再按 F';
           combat.toastAge = 1.4;
         }
+        return;
+      }
+      if (code === 'KeyV') {
+        summonVehicleForPlayer(world.x, world.z, world.yaw);
         return;
       }
       if (world.lock || vehicle.inCar) return;
@@ -283,24 +290,48 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     s.dragging = false;
   }, [s]);
 
-  // 鼠标拖动转视角 + 滚轮缩放
+  // 鼠标拖动转视角 + 滚轮缩放。指到怪时左键改走普攻，不转镜头
   useEffect(() => {
     const el = gl.domElement;
+    const ndc = new THREE.Vector2();
+    const raycaster = new THREE.Raycaster();
+    const monsterAt = (clientX, clientY) => {
+      if (vehicle.inCar || world.lock || combat.dead) return null;
+      const rect = el.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) return null;
+      ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(ndc, camera);
+      const o = raycaster.ray.origin;
+      const d = raycaster.ray.direction;
+      return pickMonsterOnRay(o.x, o.y, o.z, d.x, d.y, d.z, getMonsterPack());
+    };
+    const setSword = (on) => {
+      el.classList.toggle('sword-cursor', on);
+    };
     const down = (e) => {
-      s.dragging = true;
-      el.setPointerCapture?.(e.pointerId);
       const ae = document.activeElement;
       if (ae && ae !== document.body && typeof ae.blur === 'function') ae.blur();
+      if (e.button === 0 && e.pointerType === 'mouse' && monsterAt(e.clientX, e.clientY)) {
+        tryLightAttack(world, { air: s.air });
+        return;
+      }
+      s.dragging = true;
+      el.setPointerCapture?.(e.pointerId);
     };
     const up = (e) => {
       s.dragging = false;
       el.releasePointerCapture?.(e.pointerId);
     };
     const move = (e) => {
-      if (!s.dragging) return;
-      const { dx, dy } = pointerDeltaForView(e.movementX, e.movementY, mobileLayout.viewRotation);
-      s.camYaw -= dx * 0.005;
-      s.camPitch = clamp(s.camPitch + dy * 0.004, -0.25, 1.15);
+      if (s.dragging) {
+        const { dx, dy } = pointerDeltaForView(e.movementX, e.movementY, mobileLayout.viewRotation);
+        s.camYaw -= dx * 0.005;
+        s.camPitch = clamp(s.camPitch + dy * 0.004, -0.25, 1.15);
+        return;
+      }
+      if (e.pointerType !== 'mouse') return;
+      setSword(!!monsterAt(e.clientX, e.clientY));
     };
     const wheel = (e) => {
       e.preventDefault();
@@ -314,8 +345,12 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     el.addEventListener('pointercancel', up);
     el.addEventListener('pointermove', move);
     el.addEventListener('wheel', wheel, { passive: false });
+    const leave = () => setSword(false);
     window.addEventListener('blur', loseDrag);
+    el.addEventListener('pointerleave', leave);
     return () => {
+      setSword(false);
+      el.removeEventListener('pointerleave', leave);
       el.removeEventListener('pointerdown', down);
       el.removeEventListener('pointerup', up);
       el.removeEventListener('pointercancel', up);
@@ -323,7 +358,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
       el.removeEventListener('wheel', wheel);
       window.removeEventListener('blur', loseDrag);
     };
-  }, [gl, s]);
+  }, [gl, camera, s]);
 
   const tmp = useRef({
     fwd: new THREE.Vector3(),

@@ -1,9 +1,9 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
-import GameEnvironment from './GameEnvironment';
-import Su7LoadingPlaceholder from './vehicles/su7/Su7LoadingPlaceholder';
-import { Su7CarPlacement } from './vehicles';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { runWhenIdle } from './lib/runWhenIdle';
 import { getGameLoadingState, subscribeGameLoading } from './stores/gameLoadingStore';
+
+const GameEnvironment = lazy(() => import('./GameEnvironment'));
+const Su7Block = lazy(() => import('./vehicles/su7/Su7Deferred'));
 
 /**
  * 进图后在 idle 里挂上：环境光 → SU7。
@@ -51,8 +51,8 @@ export default function IdleDeferredLoad() {
         <GameEnvironment />
       </Suspense>
       {tier >= 2 && (
-        <Suspense fallback={<Su7LoadingPlaceholder />}>
-          <Su7CarPlacement />
+        <Suspense fallback={null}>
+          <Su7Block />
         </Suspense>
       )}
     </>

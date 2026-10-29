@@ -32,6 +32,7 @@ const GAME_KEYS = new Set([
   'ControlLeft',
   'ControlRight',
   'KeyF',
+  'KeyV',
   'KeyQ',
   'KeyE',
   'KeyJ',

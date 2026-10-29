@@ -8,7 +8,7 @@ import { GAME_TITLE } from './config/lore';
 import { DEFAULT_MODE, MODES } from './config/modes';
 import { prefetchSu7 } from './lib/prefetchSu7';
 import { beginGameLoad, noteGameLoadStage, resetGameLoad } from './scenes/game/stores/gameLoadingStore';
-import { setGamePerfMobile } from './scenes/game/config/perf';
+import { isGamePerfMobile, setGamePerfMobile } from './scenes/game/config/perf';
 import { applyGpuAccelDomClass, buildCanvasGlOptions } from './scenes/game/lib/gpuAccel';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
@@ -98,6 +98,7 @@ export default function App() {
   const isGame = mode === 'game';
   const isLowPoly = mode === 'lowpoly';
   const mobileGame = isGame && gameMobile.active;
+  if (isGamePerfMobile() !== mobileGame) setGamePerfMobile(mobileGame);
   const portrait = mobileGame && isPortraitViewport();
   const mobileViewLayout = mobileGame ? computeMobileViewLayout(viewRotation) : null;
   const canvasKey = mobileCanvasKey(viewRotation, mobileGame);
