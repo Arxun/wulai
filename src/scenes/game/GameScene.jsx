@@ -13,6 +13,10 @@ import { WulaiCrater } from './skills/fx';
 import { Monsters } from './monsters';
 import GameDiagnostics from './GameDiagnostics';
 import SkillFxWarmup from './SkillFxWarmup';
+import PerfProbe from './debug/PerfProbe';
+
+const PERF_PARAM = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('perf') : null;
+
 function GameSceneInner() {
   const lightRef = useRef();
   const skidRef = useRef();
@@ -24,6 +28,7 @@ function GameSceneInner() {
     <>
       <GameDiagnostics />
       <SkillFxWarmup />
+      {PERF_PARAM && <PerfProbe auto={PERF_PARAM === 'auto'} />}
       <SkyDome top={sky.top} horizon={sky.horizon} bottom={sky.bottom} radius={sky.radius} />
       <fog attach="fog" args={fog} />
 

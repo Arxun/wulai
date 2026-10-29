@@ -398,6 +398,25 @@
   opacity: 1;
 }
 
+/* 探测到硬件 WebGL + compositor 支持时启用（见 lib/gpuAccel.js） */
+html.gpu-accel .skillflash,
+html.gpu-accel .hurtflash {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: opacity;
+}
+
+html.gpu-accel .wulai-title {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+html.gpu-accel .wulai-flash,
+html.gpu-accel .wulai-bits {
+  will-change: opacity, transform;
+  transform: translate3d(0, 0, 0);
+}
+
 /* ---- 死亡文案 ---- */
 .death-quote {
   position: absolute;

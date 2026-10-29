@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { resetMoves, tickMoves } from '../../../lib/animation/combatMoves';
 import { HERO } from '../hero/def';
@@ -100,6 +101,14 @@ describe('载具模块 vehicles/', () => {
     expect(vehicle.carX).toBe(SU7_SPAWN.x);
     expect(vehicle.carZ).toBe(SU7_SPAWN.z);
     expect(vehicle.carYaw).toBe(SU7_SPAWN.rotationY);
+  });
+
+  it('sm_car.gltf 保留 Wheel 组层级（压缩不能 flatten/join）', () => {
+    const gltf = JSON.parse(readFileSync(new URL('../../../../public/models/su7/sm_car.gltf', import.meta.url), 'utf8'));
+    const hub = gltf.nodes.find((n) => n.name === 'Wheel');
+    expect(hub).toBeTruthy();
+    const kids = (hub.children || []).map((i) => gltf.nodes[i].name);
+    expect(kids.filter((n) => /^Wheel\./.test(n)).length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -240,6 +249,13 @@ describe('诊断 debug/（自检）', () => {
     expect(getGameLoadingState().warmupDone).toBe(true);
     resetGameLoad();
     expect(getGameLoadingState().phase).toBe('hidden');
+  });
+
+  it('probeWebGLGpu 在无 document 时安全降级', async () => {
+    const { probeWebGLGpu } = await import('../lib/gpuAccel');
+    const p = probeWebGLGpu();
+    expect(p.software).toBe(true);
+    expect(p.preferHighPerformance).toBe(false);
   });
 
   it('markSkillFxWarmupRoot 标记特效根节点', () => {

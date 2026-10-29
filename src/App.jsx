@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ControlPanel from './lib/components/ControlPanel';
 import { urlParam } from './lib/hooks/useUrlParams';
 import { REFERENCE_PHOTO } from './config/assets';
@@ -8,6 +8,7 @@ import { GAME_TITLE } from './config/lore';
 import { DEFAULT_MODE, MODES } from './config/modes';
 import { beginGameLoad, resetGameLoad } from './scenes/game/stores/gameLoadingStore';
 import { setGamePerfMobile } from './scenes/game/config/perf';
+import { applyGpuAccelDomClass, buildCanvasGlOptions } from './scenes/game/lib/gpuAccel';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
 import { computeMobileViewLayout, mobileCanvasKey } from './scenes/game/mobile/mobileViewLayout';
@@ -34,13 +35,22 @@ function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal', mobil
     import('./scenes/game/config/perf').then((m) => setPerf(m.getGamePerf()));
   }, [isGame, mobileLayoutSync]);
 
+  const glOptions = useMemo(
+    () =>
+      buildCanvasGlOptions({
+        antialias: isGame ? !mobileLayoutSync : true,
+        preserveDrawingBuffer: !isGame,
+      }),
+    [isGame, mobileLayoutSync],
+  );
+
   return (
     <Canvas
       key={isGame ? `${mode}-${canvasKey}` : mode}
       shadows={mode === 'lowpoly' || isGame}
       dpr={isGame && perf ? perf.dpr : isGame ? [1, 1.5] : [1, 2]}
       camera={cfg.camera}
-      gl={{ antialias: isGame ? !mobileLayoutSync : true, preserveDrawingBuffer: !isGame }}
+      gl={glOptions}
       resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
       style={{ display: 'block', width: '100%', height: '100%' }}
     >
@@ -111,10 +121,14 @@ export default function App() {
 
   useEffect(() => {
     if (isGame) {
+      applyGpuAccelDomClass();
       beginGameLoad();
       void import('./scenes/game/GameCanvasInner');
       void import('./scenes/game/GameModeUi');
-    } else resetGameLoad();
+    } else {
+      document.documentElement.classList.remove('gpu-accel', 'gpu-software');
+      resetGameLoad();
+    }
   }, [isGame]);
 
   const panelItems = [

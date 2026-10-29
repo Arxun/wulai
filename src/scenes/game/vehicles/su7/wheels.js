@@ -15,8 +15,9 @@ export const SU7_WHEEL_SPIN_K = 0.03;
 export const SU7_WHEEL_HALF_TRACK = 0.82;
 export const SU7_MIRROR_WHEELS = false;
 
-const TEMPLATE_NAME = /^Wheel\.\d+$/;
-const WHEEL_CHILD = /^Wheel\./;
+/** GLTFLoader 会去掉节点名里的 `.`（Wheel.001 → Wheel001） */
+const TEMPLATE_NAME = /^Wheel\.?\d+$/;
+const WHEEL_CHILD = /^Wheel\.?\d/;
 const SETUP_KEY = 'su7WheelMirrored';
 
 export const getSu7WheelHub = replicaBindWheelModel;
