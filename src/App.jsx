@@ -12,6 +12,7 @@ import { isGamePerfMobile, setGamePerfMobile } from './scenes/game/config/perf';
 import { applyGpuAccelDomClass, buildCanvasGlOptions } from './scenes/game/lib/gpuAccel';
 import { useGameMobile } from './lib/hooks/useGameMobile';
 import { useMobileInputGuard } from './lib/hooks/useMobileInputGuard';
+import { usePageBox } from './lib/hooks/usePageBox';
 import { computeMobileViewLayout, isPortraitViewport, mobileCanvasKey } from './scenes/game/mobile/mobileViewLayout';
 import './App.css';
 
@@ -92,15 +93,16 @@ export default function App() {
   const [viewRotation, setViewRotation] = useState(() =>
     initialMode === 'game' && gameMobile.active && isPortraitViewport() ? 90 : 0,
   );
-  const [viewportTick, setViewportTick] = useState(0);
+  const pageRef = useRef(null);
 
   const cfg = MODES[mode];
   const isGame = mode === 'game';
   const isLowPoly = mode === 'lowpoly';
   const mobileGame = isGame && gameMobile.active;
   if (isGamePerfMobile() !== mobileGame) setGamePerfMobile(mobileGame);
-  const portrait = mobileGame && isPortraitViewport();
-  const mobileViewLayout = mobileGame ? computeMobileViewLayout(viewRotation) : null;
+  const pageBox = usePageBox(pageRef, mobileGame);
+  const portrait = mobileGame && pageBox.vh > pageBox.vw;
+  const mobileViewLayout = mobileGame ? computeMobileViewLayout(viewRotation, pageBox) : null;
   const canvasKey = mobileCanvasKey(viewRotation, mobileGame);
   useMobileInputGuard(mobileGame);
 
@@ -113,19 +115,6 @@ export default function App() {
     if (!mobileGame) return;
     setViewRotation(portrait ? 90 : 0);
   }, [mobileGame, portrait]);
-
-  useEffect(() => {
-    if (!mobileGame) return;
-    const bump = () => setViewportTick((n) => n + 1);
-    const vv = window.visualViewport;
-    vv?.addEventListener('resize', bump);
-    window.addEventListener('resize', bump);
-    return () => {
-      vv?.removeEventListener('resize', bump);
-      window.removeEventListener('resize', bump);
-    };
-  }, [mobileGame]);
-  void viewportTick;
 
   useEffect(() => {
     document.title = GAME_TITLE;
@@ -244,7 +233,7 @@ export default function App() {
   );
 
   return (
-    <div className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}${mobileGame ? ' mobile-game' : ''}`}>
+    <div ref={pageRef} className={`page${urlParam.string('ui') === '0' ? ' noui' : ''}${mobileGame ? ' mobile-game' : ''}`}>
       {mobileGame ? (
         <Suspense fallback={null}>
           <>

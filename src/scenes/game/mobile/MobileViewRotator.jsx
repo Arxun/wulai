@@ -17,8 +17,8 @@ export default function MobileViewRotator({ enabled = false, layout = null, chil
     }
     mobileLayout.viewRotation = layout.rotationDeg;
     mobileLayout.swapViewport = layout.swap;
-    mobileLayout.wideW = layout.w;
-    mobileLayout.wideH = layout.h;
+    mobileLayout.wideW = layout.swap ? layout.w : layout.vw;
+    mobileLayout.wideH = layout.swap ? layout.h : layout.vh;
   }, [enabled, layout]);
 
   if (!enabled || !layout) return children;

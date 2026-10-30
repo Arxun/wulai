@@ -1179,6 +1179,28 @@ html.mobile-touch-guard #root {
   overflow: hidden;
   touch-action: none;
   background: #0a0c10;
+  /* 画面内左/右/下边对应的物理安全区（刘海、灵动岛、圆角、Home 条）；旋转后要换边 */
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-view-rotator[data-rotation='90'] {
+  --safe-l: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-bottom, 0px);
+  --safe-b: env(safe-area-inset-left, 0px);
+}
+
+.mobile-view-rotator[data-rotation='180'] {
+  --safe-l: env(safe-area-inset-right, 0px);
+  --safe-r: env(safe-area-inset-left, 0px);
+  --safe-b: env(safe-area-inset-top, 0px);
+}
+
+.mobile-view-rotator[data-rotation='270'] {
+  --safe-l: env(safe-area-inset-bottom, 0px);
+  --safe-r: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-right, 0px);
 }
 
 .mobile-view-rotator--swap {
@@ -1335,9 +1357,11 @@ html.mobile-touch-guard #root {
 
 .mobile-dpad {
   --dpad-size: 158px;
+  --pad-x: 22px;
+  --pad-y: 22px;
   position: absolute;
-  left: 22px;
-  bottom: 22px;
+  left: calc(var(--pad-x) + var(--safe-l, 0px));
+  bottom: calc(var(--pad-y) + var(--safe-b, 0px));
   z-index: 14;
   width: var(--dpad-size);
   height: var(--dpad-size);
@@ -1407,9 +1431,11 @@ html.mobile-touch-guard #root {
 }
 
 .mobile-right {
+  --pad-x: 22px;
+  --pad-y: 22px;
   position: absolute;
-  right: 22px;
-  bottom: 22px;
+  right: calc(var(--pad-x) + var(--safe-r, 0px));
+  bottom: calc(var(--pad-y) + var(--safe-b, 0px));
   z-index: 14;
   display: flex;
   flex-direction: column;
@@ -1422,9 +1448,11 @@ html.mobile-touch-guard #root {
   --m-attack: 92px;
   --m-orbit-btn: 50px;
   --m-cluster: 280px;
+  --pad-x: 18px;
+  --pad-y: 18px;
   position: absolute;
-  right: 18px;
-  bottom: 18px;
+  right: calc(var(--pad-x) + var(--safe-r, 0px));
+  bottom: calc(var(--pad-y) + var(--safe-b, 0px));
   z-index: 14;
   width: var(--m-cluster);
   height: var(--m-cluster);
@@ -1485,7 +1513,7 @@ html.mobile-touch-guard #root {
 }
 
 .mobile-right--drive {
-  bottom: 28px;
+  --pad-y: 28px;
 }
 
 .mobile-right__row {
@@ -1636,8 +1664,8 @@ html.mobile-touch-guard #root {
 
   .mobile-dpad {
     --dpad-size: 142px;
-    left: 16px;
-    bottom: 16px;
+    --pad-x: 16px;
+    --pad-y: 16px;
   }
 
   .mobile-dpad__hint {
@@ -1645,8 +1673,8 @@ html.mobile-touch-guard #root {
   }
 
   .mobile-right {
-    right: 16px;
-    bottom: 16px;
+    --pad-x: 16px;
+    --pad-y: 16px;
     gap: 8px;
   }
 
@@ -1654,8 +1682,8 @@ html.mobile-touch-guard #root {
     --m-attack: 84px;
     --m-orbit-btn: 46px;
     --m-cluster: 260px;
-    right: 14px;
-    bottom: 14px;
+    --pad-x: 14px;
+    --pad-y: 14px;
   }
 
   .mobile-attack-btn__svg {
@@ -1664,7 +1692,7 @@ html.mobile-touch-guard #root {
   }
 
   .mobile-right--drive {
-    bottom: 20px;
+    --pad-y: 20px;
   }
 
   .mobile-skills--inline {

@@ -1,0 +1,47 @@
+---
+description: 武来移动端操控与横竖屏布局：防系统长按（小米识图、iOS 放大镜）、旋转外壳尺寸、安全区、真机差异和验收方法
+globs: src/scenes/game/mobile/**,src/lib/hooks/useMobileInputGuard.js,src/lib/hooks/usePageBox.js,src/lib/hooks/useGameMobile.js,src/App.jsx,src/App.css,src/scenes/game/GameHud.jsx
+alwaysApply: false
+---
+
+# 移动端操控与布局
+
+## 1. 系统长按不能抢走游戏操作
+
+小米（识图、传送门）、iOS（放大镜、文字选择）、各家浏览器的长按菜单，都是从没被取消的 `touchstart` 长按触发的。`pointerdown` 里的 `preventDefault` 拦不住它们。
+
+- 需要按住的操控区（方向键、攻击和技能键、驾驶键、上车键、画布）在 `useMobileInputGuard.js` 的 `HOLD_ZONES` 里统一取消 `touchstart`。新增按住类按钮时，必须放进这些容器，或者把选择器加进 `HOLD_ZONES`。
+- 这些按钮一律用 `onPointerDown` / `onPointerUp`，不用 `onClick`：`touchstart` 被取消后浏览器就不再派发 `click`。
+- 反过来，用 `onClick` 的按钮（武器栏、载具、HUD 折叠、加载遮罩）**不能**放进 `HOLD_ZONES`，否则点了没反应。
+- CSS 保留 `user-select: none`、`-webkit-touch-callout: none`、`touch-action: none`。全局的 `contextmenu`、`selectstart`、双指缩放拦截不要删。
+- 系统级手势（比如长按导航条唤起识屏）网页拦不住，只能保证在游戏区域里长按不会触发。
+
+## 2. 布局尺寸不信任 resize 事件里读到的视口
+
+iOS 旋转屏幕时，`resize` / `orientationchange` 先触发，`visualViewport` 和 `innerHeight` 后更新，读到的可能还是旧值。旋转外壳按旧高度排版时，会比屏幕高出一截，贴底的方向键和技能键被挤到屏幕外，画面和顶部 HUD 却照常显示。
+
+- 不旋转（0°、180°）时，`.mobile-view-rotator` 的宽高用 CSS 的 `100%`，不写像素。
+- 只有 90°、270° 必须对调宽高时才用像素，而且像素来自 `usePageBox`：它用 `ResizeObserver` 量 `.page`（`position: fixed; inset: 0`）的实际尺寸。横竖屏判断也用同一个尺寸。
+- 不要再加"监听 resize 后读 `visualViewport`"的排版逻辑，也不要用 `100vh`：iOS 上 `100vh` 比可见区域高。
+
+## 3. 安全区要跟着旋转换边
+
+iPhone 横屏时，左右各有约 59px 的灵动岛和圆角，底部有 Home 条。页面整体旋转 90° 后，物理屏幕的上、下边会变成画面里的左、右边。
+
+- `.mobile-view-rotator` 按 `data-rotation` 定义了 `--safe-l`、`--safe-r`、`--safe-b`。贴边的操控按 `calc(基础边距 + var(--safe-x))` 摆放，基础边距写在 `--pad-x` / `--pad-y` 里，媒体查询只改这两个变量。
+- 新增贴屏幕边缘的操控或 HUD 时，照这个写法用变量，不要直接写死 `left` / `right` / `bottom`，也不要直接用 `env(safe-area-inset-*)`（旋转后方向是错的）。
+
+## 4. 真机和页面旋转不是一回事
+
+- 媒体查询看的是物理视口。`(orientation: landscape)`、`max-height` 这类条件只在真横屏时生效，竖屏把页面旋转 90° 时不生效。改了这类媒体查询，两种情况都要测。
+- Chrome 的设备模拟复现不了 iOS Safari 的视口滞后，也复现不了系统长按。模拟通过只能算必要条件，结论里要说明哪些要在真机上确认。
+
+## 5. 验收
+
+用无头 Chrome 加 CDP（见 `wulai-perf-standards` 技能），按 iPhone UA 和触摸模拟，分别测：
+
+- 直接横屏打开 852×393；竖屏 393×852 打开后再切成横屏。
+- 用 `Emulation.setSafeAreaInsetsOverride` 模拟 `{ left: 59, right: 59, bottom: 21 }`。
+- 每种情况下 `.mobile-dpad`、`.mobile-attack-btn`、`.mobile-combat-cluster` 都要完全在屏幕内。
+- 在每个操控区派发 `touchstart`，确认 `defaultPrevented` 为 true；用 `onClick` 的按钮必须是 false。
+- 用 `Input.dispatchTouchEvent` 发真实触摸：按住方向键，角色要移动（读 `window.__pl.x/z`）；点攻击键，`window.__world.move` 要变成招式名。
