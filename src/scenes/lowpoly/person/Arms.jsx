@@ -50,12 +50,12 @@ function slotInv(rot) {
 const _graspInv = slotInv(GRASP_ROT);
 
 function weaponSpec() {
-  return WEAPON_DEFS[combat.weapon] || WEAPON_DEFS.wood;
+  return WEAPON_DEFS[combat.weapon] || null;
 }
 
 function twoHanding() {
   const spec = weaponSpec();
-  if (!spec.twoHand) return false;
+  if (!spec?.twoHand) return false;
   return world.swing > 0 || world.heavy > 0 || world.lock;
 }
 
@@ -152,8 +152,9 @@ function Arm({ joints, jointRef }) {
             { p: mid(shoulder, elbow, 0.5), a: radii[1] },
             { p: elbow, a: radii[2] },
           ],
-          samples: 7,
-          segments: 9,
+          samples: 8,
+          segments: 14,
+          smooth: { crease: 52 },
           bumps: { count: 3, amount: 0.05, phase: 0.25 },
           jitter: 0.012,
           color: C.jacket,
@@ -171,8 +172,9 @@ function Arm({ joints, jointRef }) {
             { p: wrist, a: radii[4] },
             { p: cuffEnd, a: radii[4] * 0.97 },
           ],
-          samples: 7,
-          segments: 9,
+          samples: 8,
+          segments: 14,
+          smooth: { crease: 52 },
           caps: false,
           bumps: { count: 2, amount: 0.04, phase: 0.25 },
           jitter: 0.012,
@@ -228,11 +230,11 @@ function Arm({ joints, jointRef }) {
   return (
     <group position={shoulder} ref={(r) => { refs.current.upper = r; }}>
       <FacetMesh geometry={g.shoulderCap} roughness={0.55} />
-      <FacetMesh geometry={g.upper} side={2} roughness={0.5} texture={tex} bumpScale={0.8} />
+      <FacetMesh geometry={g.upper} side={2} roughness={0.5} texture={tex} bumpScale={0.8} smooth />
       <FacetMesh geometry={g.elbowCap} position={sub3(elbow, shoulder)} roughness={0.55} />
       {patch && <Patch at={g.patchAt} />}
       <group position={sub3(elbow, shoulder)} ref={(r) => { refs.current.fore = r; }}>
-        <FacetMesh geometry={g.fore} side={2} roughness={0.5} texture={tex} bumpScale={0.8} />
+        <FacetMesh geometry={g.fore} side={2} roughness={0.5} texture={tex} bumpScale={0.8} smooth />
         <FacetMesh geometry={g.wristSkin} roughness={0.7} texture={skin} bumpScale={0.3} smooth />
         <group
           position={sub3(g.hand, elbow)}
@@ -264,7 +266,8 @@ export default function Arms({ rig = IDLE_RIG.arms, poseRef }) {
     const spec = weaponSpec();
     const hold = twoHanding();
     const right = joints.current[0]?.current;
-    if (right?.leftGrip && spec.offHand) {
+    if (right?.weaponSlot) right.weaponSlot.visible = !!spec;
+    if (right?.leftGrip && spec?.offHand) {
       right.leftGrip.position.set(spec.offHand[0], spec.offHand[1], spec.offHand[2]);
     }
     for (let i = 0; i < joints.current.length; i++) {

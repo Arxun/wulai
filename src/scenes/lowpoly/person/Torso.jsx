@@ -38,8 +38,9 @@ export default function Torso() {
         [0.228, 0.236, 0.232, 0.228, 0.205, 0.15],
         [0.158, 0.164, 0.162, 0.152, 0.132, 0.112],
       ),
-      samples: 15,
-      segments: 14,
+      samples: 16,
+      segments: 20,
+      smooth: { crease: 52 },
       gap: { center: HALF_PI, half: 0.4 },
       thickness: 0.04,
       bumps: { count: 7, amount: 0.032, phase: 0.25 },
@@ -56,8 +57,9 @@ export default function Torso() {
     // ---- 衬衫：V 领，从胸口往上逐渐敞开 ----
     const shirt = makeLoftGeometry({
       keys: bodyKeys([0.68, 0.9, 1.2, 1.36, 1.43], [0.188, 0.19, 0.19, 0.16, 0.1], [0.128, 0.13, 0.126, 0.114, 0.09]),
-      samples: 9,
-      segments: 12,
+      samples: 10,
+      segments: 16,
+      smooth: { crease: 52 },
       gap: { center: HALF_PI, half: (t) => (t < 0.58 ? 0 : ((t - 0.58) / 0.42) * 0.46) },
       thickness: 0.014,
       color: C.shirt,
@@ -76,8 +78,9 @@ export default function Torso() {
         [0.196, 0.196, 0.166, 0.168, 0.14, 0.09],
         [0.14, 0.14, 0.112, 0.112, 0.1, 0.082],
       ),
-      samples: 9,
-      segments: 12,
+      samples: 10,
+      segments: 16,
+      smooth: { crease: 52 },
       color: C.tee,
       faceTint: 0.03,
       uvMeters: 0.05,
@@ -91,8 +94,9 @@ export default function Torso() {
         { p: [0, 1.42, -0.01], a: 0.124, b: 0.108 },
         { p: [0, 1.472, -0.016], a: 0.128, b: 0.112 },
       ],
-      samples: 5,
-      segments: 12,
+      samples: 6,
+      segments: 16,
+      smooth: { crease: 48 },
       gap: { center: HALF_PI, half: 0.78 },
       thickness: 0.03,
       color: C.collar,
@@ -114,10 +118,10 @@ export default function Torso() {
   const sides = [-1, 1];
   return (
     <group>
-      <FacetMesh geometry={geo.tee} side={2} texture={tex.tee} bumpScale={0.6} />
-      <FacetMesh geometry={geo.shirt} side={2} texture={tex.shirt} bumpScale={0.8} />
-      <FacetMesh geometry={geo.jacket} side={2} roughness={0.5} texture={tex.jacket} bumpScale={0.9} />
-      <FacetMesh geometry={geo.collar} side={2} roughness={0.8} />
+      <FacetMesh geometry={geo.tee} side={2} texture={tex.tee} bumpScale={0.6} smooth />
+      <FacetMesh geometry={geo.shirt} side={2} texture={tex.shirt} bumpScale={0.8} smooth />
+      <FacetMesh geometry={geo.jacket} side={2} roughness={0.5} texture={tex.jacket} bumpScale={0.9} smooth />
+      <FacetMesh geometry={geo.collar} side={2} roughness={0.8} smooth />
       {/* 后颈的兜帽卷 */}
       <FacetMesh geometry={geo.hood} position={[CX, 1.445, -0.095]} rotation={[0.35, 0, 0]} />
       {/* 衬衫翻领 */}

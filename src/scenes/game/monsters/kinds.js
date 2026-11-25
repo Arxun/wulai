@@ -1,4 +1,7 @@
-/** 怪物种类表（Monsters / combat 共用数值） */
+/**
+ * 怪物种类表（Monsters / combat 共用数值）。
+ * drop：掉落 id → 概率。武器见 combatStore 的 WEAPONS，血药见 POTIONS（hp 小 / hpMid 中 / hpBig 大）。
+ */
 export const MONSTER_KINDS = {
   pebble: {
     name: '青石蟹',
@@ -34,7 +37,7 @@ export const MONSTER_KINDS = {
     hpY: 1.05,
     count: 42,
     zone: { height: [5, 16], minPath: 4, maxSlope: 0.46 },
-    drop: { iron: 0.22, hp: 0.42 },
+    drop: { iron: 0.22, hp: 0.42, hpMid: 0.08 },
   },
   crow: {
     name: '赤鸦',
@@ -52,7 +55,7 @@ export const MONSTER_KINDS = {
     hpY: 1.2,
     count: 33,
     zone: { height: [14, 26], minPath: 4.2, maxSlope: 0.55 },
-    drop: { frost: 0.16, hp: 0.3 },
+    drop: { frost: 0.16, hp: 0.3, hpMid: 0.12 },
   },
   golem: {
     name: '岩灵',
@@ -70,7 +73,7 @@ export const MONSTER_KINDS = {
     hpY: 1.75,
     count: 24,
     zone: { height: [22, 36], minPath: 4.5, maxSlope: 0.62 },
-    drop: { ember: 0.2, hp: 0.55 },
+    drop: { ember: 0.2, hp: 0.35, hpMid: 0.3 },
   },
   oni: {
     name: '山魈',
@@ -88,7 +91,7 @@ export const MONSTER_KINDS = {
     hpY: 2.05,
     count: 12,
     zone: { height: [30, 72], minPath: 5, maxSlope: 0.7, near: [-72, -66, 42] },
-    drop: { storm: 0.32, ember: 0.2, hp: 1 },
+    drop: { storm: 0.32, ember: 0.2, hpMid: 1, hpBig: 0.12 },
   },
   /** 东北角 Boss：约 Lv10+、中装以上较稳 */
   titan: {
@@ -110,7 +113,7 @@ export const MONSTER_KINDS = {
     leash: 10,
     respawnSec: [110, 165],
     zone: { height: [-99, 99], minPath: 0, maxSlope: 0.92, anchor: [118, -118] },
-    drop: { storm: 0.38, blood: 0.18, hp: 1 },
+    drop: { storm: 0.38, blood: 0.18, hpMid: 1, hpBig: 0.6 },
   },
   /** 东南角 Boss */
   wyrm: {
@@ -132,6 +135,6 @@ export const MONSTER_KINDS = {
     leash: 10,
     respawnSec: [110, 165],
     zone: { height: [-99, 99], minPath: 0, maxSlope: 0.92, anchor: [118, 118] },
-    drop: { ember: 0.32, blood: 0.22, hp: 1 },
+    drop: { ember: 0.32, blood: 0.22, hpMid: 1, hpBig: 0.6 },
   },
 };

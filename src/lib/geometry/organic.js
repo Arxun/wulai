@@ -125,7 +125,7 @@ export function makeNeedlePadGeometry(
  * @param {number} [squash] 纵向压扁系数
  * @param {{color?:THREE.ColorRepresentation, detail?:number, faceTint?:number}} [opt]
  */
-export function makeRockGeometry(seed = 1, squash = 0.8, { color = '#807d78', detail = 1, faceTint = 0.1 } = {}) {
+export function makeRockGeometry(seed = 1, squash = 0.8, { color = '#807d78', detail = 1, faceTint = 0.1, smooth = false } = {}) {
   const g = new THREE.IcosahedronGeometry(1, detail);
   const p = g.attributes.position;
   const v = new THREE.Vector3();
@@ -134,14 +134,17 @@ export function makeRockGeometry(seed = 1, squash = 0.8, { color = '#807d78', de
     const r = 0.72 + hash3(v.x, v.y, v.z, seed) * 0.55;
     p.setXYZ(i, v.x * r, v.y * r * squash, v.z * r);
   }
-  g.computeVertexNormals();
+  const out = g.index ? g.toNonIndexed() : g;
+  if (out !== g) g.dispose();
   const base = toColor(color);
-  paintByPosition(g, (x, y, z) => {
+  paintByPosition(out, (x, y, z) => {
     const k = 0.78 + 0.34 * THREE.MathUtils.clamp((y / squash + 1) / 2, 0, 1);
     return base.clone().multiplyScalar(k);
   });
-  applyFaceTint(g, faceTint, seed);
-  return g;
+  applyFaceTint(out, faceTint, seed);
+  if (smooth) smoothNormals(out, smooth === true ? { crease: 40 } : smooth);
+  else out.computeVertexNormals();
+  return out;
 }
 
 /**

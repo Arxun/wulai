@@ -6,8 +6,10 @@ export const GAME_PERF = {
   dpr: [1, 1.5],
   /** 主方向光阴影贴图边长 */
   shadowMapSize: 1024,
-  /** 地面网格分段（260m 地图；略降可换帧率） */
-  terrainSegments: 176,
+  /** PCF 软阴影的模糊半径（像素）。贴图不加大，靠滤波去掉硬边 */
+  shadowRadius: 2,
+  /** 地面网格分段（260m 地图）。近处要密，缓坡才能抹平而不是一块一块的三角形 */
+  terrainSegments: 240,
   /** drei Environment 立方体分辨率 */
   environmentResolution: 48,
   /** 草簇散布数量（Instanced 顶点量） */
@@ -32,7 +34,8 @@ export const GAME_PERF = {
 const MOBILE_OVERRIDES = {
   dpr: [1, 1],
   shadowMapSize: 512,
-  terrainSegments: 120,
+  shadowRadius: 1,
+  terrainSegments: 156,
   environmentResolution: 32,
   grassClusterCount: 520,
 };

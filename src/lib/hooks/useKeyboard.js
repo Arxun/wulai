@@ -38,18 +38,6 @@ const GAME_KEYS = new Set([
   'KeyJ',
   'KeyK',
   'KeyR',
-  'Digit1',
-  'Digit2',
-  'Digit3',
-  'Digit4',
-  'Digit5',
-  'Digit6',
-  'Numpad1',
-  'Numpad2',
-  'Numpad3',
-  'Numpad4',
-  'Numpad5',
-  'Numpad6',
 ]);
 
 const MODIFIERS = new Set(['AltLeft', 'AltRight', 'MetaLeft', 'MetaRight']);

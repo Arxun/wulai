@@ -5,11 +5,11 @@ import { FxLight } from './fx/FxLight';
 import FacetMesh from '../../lib/components/FacetMesh';
 import { makeBlobGeometry } from '../../lib/geometry/organic';
 import { makeLoftGeometry } from '../../lib/geometry/loft';
-import { loot, spawnMapStarterLoot } from './stores/combatStore';
+import { POTIONS, loot, spawnMapStarterLoot } from './stores/combatStore';
 import { terrainHeight } from './maps/huangshan/heightfield';
 
 /**
- * 地上的掉落物：武器缩小立着，药是红/蓝小瓶。
+ * 地上的掉落物：武器缩小立着，药是小瓶，颜色按 POTIONS 里的档位走。
  * 走近约 1.6 米自动捡进背包。
  */
 
@@ -170,9 +170,10 @@ function LootMesh({ id, geo }) {
       </group>
     );
   }
-  const potion = id === 'mp';
-  const tint = potion ? '#3d8adf' : '#d63a32';
-  const glow = potion ? '#7ecbff' : '#ff6a55';
+  // 各档血药共用同一个瓶子几何体，只换材质颜色（uniform），不会多编译着色器
+  const pot = POTIONS[id] || POTIONS.hp;
+  const tint = id === 'mp' ? '#3d8adf' : pot.color;
+  const glow = id === 'mp' ? '#7ecbff' : pot.glow;
   return (
     <group>
       <FacetMesh geometry={geo.bottle} roughness={0.25} metalness={0.15} tint={tint} />
@@ -184,7 +185,7 @@ function LootMesh({ id, geo }) {
 
 function LootItem({ item, geo }) {
   const group = useRef();
-  const ring = item.id === 'hp' ? '#ff6a55' : item.id === 'mp' ? '#6cb6ff' : '#ffd166';
+  const ring = POTIONS[item.id]?.glow || (item.id === 'mp' ? '#6cb6ff' : '#ffd166');
 
   useFrame(({ clock }) => {
     const g = group.current;

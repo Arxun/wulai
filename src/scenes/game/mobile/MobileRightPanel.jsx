@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { moveOf } from '../skills';
-import { combat } from '../stores/combatStore';
+import { POTIONS, combat } from '../stores/combatStore';
 import { drift, NITRO_MAX } from '../stores/driftStore';
 import { vehicle } from '../vehicles/runtime';
 import { emitMobilePress, emitMobileRelease, setMobileKey } from './mobileInputStore';
 
-/** 绕普攻键 90° 弧：从下往上 崩 → E → 武 → 血（跳在弧外、崩左侧） */
+/** 绕普攻键 90° 弧：从下往上 崩 → E → 武 → 血（跳在弧外、崩左侧）。「血」喝的是背包里选的 Q 键血药 */
 const ARC_SLOTS = [
   { code: 'KeyK', moveId: 'skill' },
   { code: 'KeyE', moveId: 'whirl', whirl: true, label: 'E' },
@@ -74,7 +74,8 @@ export default function MobileRightPanel() {
     wulaiCd: 0,
     whirlCd: 0,
     dead: false,
-    potsHp: 0,
+    quickPot: combat.quickPot,
+    potCount: 0,
   });
 
   useEffect(() => {
@@ -88,7 +89,8 @@ export default function MobileRightPanel() {
           wulaiCd: combat.wulaiCd,
           whirlCd: combat.whirlCd,
           dead: combat.dead,
-          potsHp: combat.pots.hp || 0,
+          quickPot: combat.quickPot,
+          potCount: combat.pots[combat.quickPot] || 0,
         }),
       80,
     );
@@ -119,7 +121,7 @@ export default function MobileRightPanel() {
 
   const tapPotion = (e) => {
     e.preventDefault();
-    if (snap.dead || snap.potsHp <= 0) return;
+    if (snap.dead || snap.potCount <= 0) return;
     emitMobilePress('KeyQ');
   };
 
@@ -238,10 +240,10 @@ export default function MobileRightPanel() {
               <button
                 key="pot"
                 type="button"
-                className={`mobile-skills__btn mobile-skills__btn--orbit mobile-pot-btn${snap.potsHp > 0 ? ' own' : ''}`}
+                className={`mobile-skills__btn mobile-skills__btn--orbit mobile-pot-btn${snap.potCount > 0 ? ' own' : ''}`}
                 style={{ left: pos.left, top: pos.top }}
-                aria-label="回血丹"
-                disabled={snap.dead || snap.potsHp <= 0}
+                aria-label={`${POTIONS[snap.quickPot]?.name || '血药'} ×${snap.potCount}`}
+                disabled={snap.dead || snap.potCount <= 0}
                 onPointerDown={tapPotion}
               >
                 血

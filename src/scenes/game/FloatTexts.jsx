@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { floats } from './stores/combatStore';
+import { floats, world } from './stores/combatStore';
 
 /**
  * 头顶伤害数字。用一张小 canvas 做成 sprite，
@@ -58,7 +58,7 @@ export default function FloatTexts() {
   const cache = useMemo(() => new Map(), []);
 
   useFrame((_, dtRaw) => {
-    if (floats.length === 0) return;
+    if (world.paused || floats.length === 0) return;
     const dt = Math.min(dtRaw, 0.05);
     for (let i = floats.length - 1; i >= 0; i--) {
       floats[i].age += dt;

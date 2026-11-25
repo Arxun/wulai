@@ -1,26 +1,24 @@
 import { useEffect, useState } from 'react';
 import { moveOf } from './skills';
 import { HERO_NAME } from '../../config/lore';
-import {
-  LEVEL_MAX,
-  POTIONS,
-  WEAPON_ORDER,
-  WEAPONS,
-  combat,
-  equipWeapon,
-  liveStats,
-  usePotion,
-} from './stores/combatStore';
+import { LEVEL_MAX, POTIONS, combat, liveStats, usePotion } from './stores/combatStore';
 
 /**
- * 人物信息：头像 + 血蓝 + 等级经验 + 攻防武器 + 药品（位于 MapHudHeader 下方）。
+ * 人物信息：头像 + 血蓝 + 等级经验 + 攻防武器 + Q 键血药（位于 MapHudHeader 下方）。
  * 100ms 读一次 combatStore，和右上角氮气面板同一套路。
+ * 点头像打开系统菜单。PC 也可以按 Esc。见 SystemMenu.jsx。
  */
 
-/** 头部特写：圆顺黑发、大号黑墨镜 */
-function Avatar() {
+/** 头部特写：圆顺黑发、大号黑墨镜。点一下打开系统菜单 */
+function Avatar({ onOpen, mobileCompact }) {
   return (
-    <div className="av" aria-label={HERO_NAME} title={HERO_NAME}>
+    <button
+      type="button"
+      className="av"
+      aria-label={`${HERO_NAME} · 打开系统菜单`}
+      title={mobileCompact ? '系统菜单' : '系统菜单（Esc）'}
+      onClick={onOpen}
+    >
       <svg viewBox="0 0 64 64" aria-hidden>
         <defs>
           <linearGradient id="av-bg" x1="0" y1="0" x2="0" y2="1">
@@ -56,7 +54,7 @@ function Avatar() {
         {/* 嘴 */}
         <path d="M27.5 48.5 Q32 51 36.5 48" stroke="#7a3d2e" strokeWidth="1.5" fill="none" strokeLinecap="round" />
       </svg>
-    </div>
+    </button>
   );
 }
 
@@ -69,7 +67,7 @@ function CdChip({ name, cd }) {
   );
 }
 
-export default function CombatHud({ mobileCompact = false }) {
+export default function CombatHud({ mobileCompact = false, onOpenMenu }) {
   const [tick, setTick] = useState(0);
   const [folded, setFolded] = useState(false);
   useEffect(() => {
@@ -80,6 +78,8 @@ export default function CombatHud({ mobileCompact = false }) {
   const hp = s.maxHp ? combat.hp / s.maxHp : 0;
   const mp = s.maxMp ? combat.mp / s.maxMp : 0;
   const xp = s.xpNeed ? combat.xp / s.xpNeed : 1;
+  const quickPot = POTIONS[combat.quickPot] || POTIONS.hp;
+  const quickCount = combat.pots[quickPot.id] || 0;
   void tick;
 
   return (
@@ -88,7 +88,7 @@ export default function CombatHud({ mobileCompact = false }) {
         folded ? ' chud--folded' : ''
       }${mobileCompact ? ' chud--mobile' : ''}`}
     >
-      {!folded && <Avatar />}
+      <Avatar onOpen={onOpenMenu} mobileCompact={mobileCompact} />
       <div className="chud-main">
         <button
           type="button"
@@ -153,23 +153,13 @@ export default function CombatHud({ mobileCompact = false }) {
       </div>
       {!mobileCompact && !folded && (
         <div className="chud-side">
-          <div className="chud-bag">
-            {WEAPON_ORDER.map((id, i) => (
-              <button
-                key={id}
-                type="button"
-                className={`chud-wep-btn${combat.owned[id] ? ' own' : ''}${combat.weapon === id ? ' on' : ''}`}
-                title={WEAPONS[id].name}
-                disabled={!combat.owned[id]}
-                onClick={() => equipWeapon(id)}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
           <div className="chud-pots">
-            <b className={`hp${combat.pots.hp ? ' own' : ''}`} title={POTIONS.hp.name} onClick={() => usePotion('hp')}>
-              Q {combat.pots.hp}
+            <b
+              className={`hp${quickCount ? ' own' : ''}`}
+              title={`${quickPot.name} · 回血 +${quickPot.hp}（点头像在背包里换）`}
+              onClick={() => usePotion()}
+            >
+              Q {quickPot.name} ×{quickCount}
             </b>
           </div>
         </div>

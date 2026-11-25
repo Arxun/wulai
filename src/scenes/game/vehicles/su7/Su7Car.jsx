@@ -9,6 +9,7 @@ import { SU7_DRIVER_LOCAL, SU7_MESH_YAW } from './driverSeat';
 import { replicaUpdateWheels } from './replicaCar';
 import { bindSu7WheelModel, listSu7WheelSpinNodes } from './wheels';
 import NitroFlame from '../../NitroFlame';
+import { world } from '../../stores/combatStore';
 import { drift } from '../../stores/driftStore';
 import { guardFrame } from '../../debug/reportError';
 import { terrainHeight } from '../../maps/huangshan/heightfield';
@@ -76,6 +77,7 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
   }, [scene]);
 
   useFrame(guardFrame('vehicles/Su7Car', (_, dt) => {
+    if (world.paused) return;
     if (vehicle == null) {
       throw new Error('vehicle runtime 未就绪');
     }

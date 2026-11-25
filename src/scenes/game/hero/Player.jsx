@@ -54,10 +54,8 @@ import {
   WHIRL_MP,
   WULAI_CD,
   WULAI_MP,
-  WEAPON_ORDER,
   combat,
   DEATH_RESPAWN_SEC,
-  equipWeapon,
   fx,
   healTo,
   MP_REGEN_PER_SEC,
@@ -92,7 +90,8 @@ import {
  *  - 空格跳跃：点按小跳，长按最多 2 秒蓄力，松手跳；蓄满最高是身高的 5 倍。
  *    跑起来再跳会带着水平速度，所以跳得更远。
  *  - 连按 J：刺 → 劈 → 砍 → 旋；空中 J 下砸 ×1.5；E 回旋斩（可移动）；K 崩击；R 大招「武来」。
- *    Q 回血；蓝量自动回复。招式表在 lib/animation/combatMoves.js。数字 1–5 换已获得的武器。
+ *    Q 喝背包里选好的血药；蓝量自动回复。招式表在 lib/animation/combatMoves.js。
+ *    换武器、选 Q 键用药都在背包里（点左上角头像，见 SystemMenu.jsx），没有数字键快捷。
  *
  * 几个关键点：
  *  - 步态相位按**走过的距离**累加（见 lib/animation/gait.js），所以脚不会在地上打滑；
@@ -156,6 +155,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
   // 氮气在 keydown 那一下就判定：短按一下有可能整个夹在两帧之间，轮询会漏
   const keys = useKeyboard(
     (code) => {
+      if (world.paused) return;
       if (code === 'ControlLeft' || code === 'ControlRight') {
         if (!combat.dead) tryActivateNitro();
         return;
@@ -180,7 +180,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
       }
       if (combat.dead) return;
       if (code === 'KeyQ') {
-        usePotion('hp');
+        usePotion();
         return;
       }
       if (code === 'KeyE') {
@@ -226,12 +226,10 @@ export default function Player({ lightRef, skidRef, lineRef }) {
           fx.skill = 0.2;
           fx.shake = Math.max(fx.shake, 0.2);
         }
-        return;
       }
-      const digit = code.startsWith('Digit') || code.startsWith('Numpad') ? Number(code.slice(-1)) : 0;
-      if (digit >= 1 && digit <= WEAPON_ORDER.length) equipWeapon(WEAPON_ORDER[digit - 1]);
     },
     (code) => {
+      if (world.paused) return;
       if (code === 'Space' && !world.lock) s.wantJump = true;
     },
   );
@@ -277,10 +275,13 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     wulaiSavedDist: 5.2,
     wulaiSavedMult: 1,
     wulaiEffDist: 5.2,
+    camEyeY: 0,
     };
+    init.camEyeY = init.pos.y + 1.3;
     if (START_IN_SU7) {
       enterSu7(init);
       init.camYaw = init.yaw;
+      init.camEyeY = init.pos.y + 1.15;
     }
     return init;
   });
@@ -310,6 +311,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
       el.classList.toggle('sword-cursor', on);
     };
     const down = (e) => {
+      if (world.paused) return;
       const ae = document.activeElement;
       if (ae && ae !== document.body && typeof ae.blur === 'function') ae.blur();
       if (e.button === 0 && e.pointerType === 'mouse' && monsterAt(e.clientX, e.clientY)) {
@@ -326,6 +328,8 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     const move = (e) => {
       if (s.dragging) {
         const { dx, dy } = pointerDeltaForView(e.movementX, e.movementY, mobileLayout.viewRotation);
+        // 指针偶尔会吐出几百像素的跳变，转镜头会甩一下。几猫直接丢掉这种采样
+        if (Math.abs(dx) > 400 || Math.abs(dy) > 400) return;
         s.camYaw -= dx * 0.005;
         s.camPitch = clamp(s.camPitch + dy * 0.004, -0.25, 1.15);
         return;
@@ -376,6 +380,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
 
   useFrame(
     guardFrame('hero/Player', (state, dtRaw) => {
+    if (world.paused) return;
     if (fx.stop > 0) fx.stop = Math.max(0, fx.stop - dtRaw);
     const dt = Math.min(dtRaw, 0.05) * (fx.stop > 0 && !world.lock ? 0.14 : 1);
     updateCarProximity(s.pos.x, s.pos.z);
@@ -768,7 +773,12 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     }
 
     // ---- 第三人称相机：注视胸口上方，位置在球面上，并且不穿进地面 ----
-    tmp.target.copy(s.pos).addScaledVector(UP, inCar ? 1.15 : 1.3);
+    // 水平跟死，高度按几猫的 eyeRate（11）平滑，坡上不会一颠一颠
+    const eyeLift = inCar ? 1.15 : 1.3;
+    const eyeY = s.pos.y + eyeLift;
+    if (typeof s.camEyeY !== 'number') s.camEyeY = eyeY;
+    s.camEyeY += (eyeY - s.camEyeY) * (1 - Math.exp(-11 * dt));
+    tmp.target.set(s.pos.x, s.camEyeY, s.pos.z);
     const cp = Math.cos(s.camPitch);
     const boostK = smoothstep(drift.boost, 0, 0.35);
     let skillZoom = 0;
@@ -823,6 +833,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
         skillFov = 12 * fade;
       }
     }
+    if (!inCar && s.land > 0) tmp.target.y -= 0.2 * s.land * s.land;
     tmp.camPos
       .set(Math.sin(s.camYaw) * cp, Math.sin(s.camPitch), Math.cos(s.camYaw) * cp)
       // 跑得快 / 喷氮气时镜头拉远，速度感更强
@@ -842,10 +853,12 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     tmp.camPos.z = clamp(tmp.camPos.z, -camLimit, camLimit);
     tmp.camPos.y = Math.max(tmp.camPos.y, terrainHeight(tmp.camPos.x, tmp.camPos.z) + 0.8);
     if (fx.shake > 0) {
-      tmp.camPos.x += (Math.random() - 0.5) * fx.shake * 0.7;
-      tmp.camPos.y += (Math.random() - 0.5) * fx.shake * 0.45;
-      tmp.camPos.z += (Math.random() - 0.5) * fx.shake * 0.7;
-      fx.shake = Math.max(0, fx.shake - dtRaw * 2.6);
+      const t = state.clock.elapsedTime;
+      const amp = fx.shake * 0.45;
+      tmp.camPos.x += Math.sin(t * 47) * amp;
+      tmp.camPos.y += Math.sin(t * 31 + 1.2) * amp * 0.55;
+      tmp.camPos.z += Math.cos(t * 43) * amp;
+      fx.shake = Math.max(0, fx.shake - dtRaw * 1.7);
     }
     camera.position.lerp(tmp.camPos, 1 - Math.exp(-13 * dt));
     camera.lookAt(tmp.target);

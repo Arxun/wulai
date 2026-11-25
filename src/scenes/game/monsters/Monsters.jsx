@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { fx } from '../stores/combatStore';
+import { fx, world } from '../stores/combatStore';
 import { applyInstanceAlpha, instanceAlphaAttribute } from '../../../lib/materials/instanceAlpha';
 import { buildMonsterBatches } from './monsterBatch';
 import { MONSTER_KINDS } from './kinds';
@@ -177,6 +177,7 @@ export default function Monsters() {
 
   useFrame(
     guardFrame('monsters/Monsters', ({ camera }, dtRaw) => {
+      if (world.paused) return;
       frame.current += 1;
       const frozen = fx.stop > 0;
       const dt = Math.min(dtRaw, 0.05) * (frozen ? 0.14 : 1);

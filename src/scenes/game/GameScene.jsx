@@ -36,7 +36,9 @@ function GameSceneInner() {
   const skidRef = useRef();
   const lineRef = useRef();
   const { sky, fog } = MAP_ENV;
-  const sm = getGamePerf().shadowMapSize;
+  const perf = getGamePerf();
+  const sm = perf.shadowMapSize;
+  const shadowRadius = perf.shadowRadius;
 
   return (
     <>
@@ -62,6 +64,7 @@ function GameSceneInner() {
         shadow-camera-far={60}
         shadow-bias={-0.0004}
         shadow-normalBias={0.03}
+        shadow-radius={shadowRadius}
       />
       <directionalLight position={[40, 20, -30]} intensity={0.35} color="#dce8f2" />
       <FxLightPool />

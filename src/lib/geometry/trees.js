@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { smoothNormals } from './normals';
 import { makeLoftGeometry } from './loft';
 import { makeBlobGeometry, makeNeedlePadGeometry } from './organic';
 import { applyFaceTint, paintByPosition, toColor } from './vertexColor';
@@ -20,10 +21,11 @@ import { mulberry32 } from '../math/random';
 const flat = (g) => (g.index ? g.toNonIndexed() : g);
 
 /** 合并并清理临时几何体 */
-function combine(parts, tint, seed) {
+function combine(parts, tint, seed, smooth = false) {
   const merged = mergeGeometries(parts.map(flat), false);
   parts.forEach((p) => p.dispose());
   if (tint) applyFaceTint(merged, tint, seed);
+  if (smooth) smoothNormals(merged, smooth === true ? { crease: 46 } : smooth);
   return merged;
 }
 
@@ -42,8 +44,8 @@ function trunk({ height, radius, lean = 0, seed, color = '#53412f', taper = 0.32
   }
   return makeLoftGeometry({
     keys,
-    samples: 6,
-    segments: 7,
+    samples: 8,
+    segments: 12,
     jitter: 0.06,
     color,
     capColor: color,
@@ -78,7 +80,7 @@ export function makeConiferGeometry({
     const h = (height - bottom) * (0.46 - t * 0.14);
     // 最下层从 bottom 起，最上层的锥顶刚好到 height，层与层之间互相重叠
     const y = bottom + (height - bottom - h) * t;
-    const cone = new THREE.ConeGeometry(r, h, 7, 1);
+    const cone = new THREE.ConeGeometry(r, h, 12, 2);
     cone.translate(0, h / 2, 0);
     // 下层偏深、针尖偏亮
     const shade = 0.78 + t * 0.3;
@@ -89,7 +91,7 @@ export function makeConiferGeometry({
     cone.translate((rnd() - 0.5) * r * 0.1, y, (rnd() - 0.5) * r * 0.1);
     parts.push(cone);
   }
-  return combine(parts, 0.07, seed);
+  return combine(parts, 0.07, seed, { crease: 46 });
 }
 
 /**
@@ -114,8 +116,8 @@ export function makeHuangshanPine({ height = 4.2, seed = 1, spread = 2.6 } = {})
           { p: [Math.cos(az) * len * 0.55, y + 0.12, Math.sin(az) * len * 0.55], a: height * 0.018 },
           { p: [Math.cos(az) * len, tipY, Math.sin(az) * len], a: height * 0.009 },
         ],
-        samples: 6,
-        segments: 6,
+        samples: 8,
+        segments: 10,
         jitter: 0.08,
         color: '#4a3b2f',
         faceTint: 0.07,
@@ -147,7 +149,7 @@ export function makeHuangshanPine({ height = 4.2, seed = 1, spread = 2.6 } = {})
     core.translate(x, y, z);
     parts.push(core);
   }
-  return combine(parts, 0, seed);
+  return combine(parts, 0, seed, { crease: 46 });
 }
 
 /** 阔叶树：树干 + 几个团块树冠 */
@@ -162,7 +164,7 @@ export function makeBroadleafGeometry({ height = 6, seed = 1, palette = ['#4f6b3
     const d = r0 * 0.55 * rnd();
     const blob = makeBlobGeometry({
       radius: rad,
-      detail: 1,
+      detail: 2,
       scale: [1, 0.82, 1],
       jitter: 0.16,
       color: palette[Math.floor(rnd() * palette.length)],
@@ -172,5 +174,5 @@ export function makeBroadleafGeometry({ height = 6, seed = 1, palette = ['#4f6b3
     blob.translate(Math.cos(az) * d, height * (0.6 + rnd() * 0.3), Math.sin(az) * d);
     parts.push(blob);
   }
-  return combine(parts, 0.05, seed);
+  return combine(parts, 0.05, seed, { crease: 42 });
 }

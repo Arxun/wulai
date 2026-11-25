@@ -18,8 +18,9 @@ function pantSegment({ keys, pivot, seed, kneeAt }) {
   return pivotGeometry(
     makeLoftGeometry({
       keys,
-      samples: 9,
-      segments: 10,
+      samples: 10,
+      segments: 16,
+      smooth: { crease: 52 },
       bumps: { count: 2, amount: 0.03, phase: 0.1 },
       jitter: 0.015,
       // 膝盖前凸（kneeAt 是膝盖在这段里的 t 位置，没有就不凸）
@@ -44,8 +45,9 @@ function Boot({ position, rotY, seed }) {
         { p: [0, 0.19, -0.012], a: 0.066, b: 0.066 },
         { p: [0, 0.1, 0.0], a: 0.064, b: 0.07 },
       ],
-      samples: 5,
-      segments: 8,
+      samples: 6,
+      segments: 12,
+      smooth: { crease: 48 },
       // 靴口一圈深色
       color: (t) => (t < 0.12 ? C.bootDark : C.boot),
       faceTint: 0.06,
@@ -60,8 +62,9 @@ function Boot({ position, rotY, seed }) {
         { p: [0, 0.04, 0.225], a: 0.022, b: 0.024 },
       ],
       ref: [0, 1, 0],
-      samples: 9,
-      segments: 8,
+      samples: 10,
+      segments: 12,
+      smooth: { crease: 48 },
       color: C.boot,
       faceTint: 0.06,
       seed: seed + 1,
@@ -73,8 +76,9 @@ function Boot({ position, rotY, seed }) {
         { p: [0, 0.016, 0.23], a: 0.052, b: 0.016 },
       ],
       ref: [0, 1, 0],
-      samples: 7,
-      segments: 6,
+      samples: 8,
+      segments: 10,
+      smooth: { crease: 44 },
       color: C.sole,
       faceTint: 0.05,
       seed: seed + 2,
@@ -85,9 +89,9 @@ function Boot({ position, rotY, seed }) {
 
   return (
     <group position={position} rotation={[0, rotY, 0]}>
-      <FacetMesh geometry={g.sole} roughness={0.95} side={2} />
-      <FacetMesh geometry={g.foot} roughness={0.85} side={2} texture={tex} bumpScale={1} />
-      <FacetMesh geometry={g.shaft} roughness={0.85} side={2} texture={tex} bumpScale={1} />
+      <FacetMesh geometry={g.sole} roughness={0.95} side={2} smooth />
+      <FacetMesh geometry={g.foot} roughness={0.85} side={2} texture={tex} bumpScale={1} smooth />
+      <FacetMesh geometry={g.shaft} roughness={0.85} side={2} texture={tex} bumpScale={1} smooth />
       {/* 鞋带：三道横条 */}
       {[0.0, 0.045, 0.09].map((z, i) => (
         <FacetMesh key={i} geometry={g.lace} position={[0, 0.128 - i * 0.012, z]} rotation={[-0.18, 0, 0]} castShadow={false} />
@@ -134,10 +138,10 @@ function Leg({ joints, jointRef }) {
 
   return (
     <group position={hip} ref={(r) => { refs.current.thigh = r; }}>
-      <FacetMesh geometry={g.thigh} roughness={0.85} side={2} texture={tex} bumpScale={0.8} />
+      <FacetMesh geometry={g.thigh} roughness={0.85} side={2} texture={tex} bumpScale={0.8} smooth />
       <FacetMesh geometry={g.kneeCap} position={sub3(knee, hip)} roughness={0.85} />
       <group position={sub3(knee, hip)} ref={(r) => { refs.current.shin = r; }}>
-        <FacetMesh geometry={g.shin} roughness={0.85} side={2} texture={tex} bumpScale={0.8} />
+        <FacetMesh geometry={g.shin} roughness={0.85} side={2} texture={tex} bumpScale={0.8} smooth />
         <group position={sub3(ankle, knee)} ref={(r) => { refs.current.foot = r; }}>
           <Boot position={sub3(boot, ankle)} rotY={bootRotY} seed={seed + 20} />
         </group>
@@ -154,8 +158,9 @@ export default function Legs({ rig = IDLE_RIG.legs, poseRef }) {
           { p: [-0.02, 0.6, 0], a: 0.205, b: 0.138 },
           { p: [-0.02, 0.74, 0], a: 0.21, b: 0.14 },
         ],
-        samples: 3,
-        segments: 12,
+        samples: 4,
+        segments: 16,
+        smooth: { crease: 52 },
         color: C.pants,
         seed: 51,
       }),
@@ -179,7 +184,7 @@ export default function Legs({ rig = IDLE_RIG.legs, poseRef }) {
 
   return (
     <group>
-      <FacetMesh geometry={pelvis} roughness={0.9} />
+      <FacetMesh geometry={pelvis} roughness={0.9} smooth />
       {rig.map((leg, i) => (
         <Leg key={i} joints={leg} jointRef={(r) => { joints.current[i] = r; }} />
       ))}

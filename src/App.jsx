@@ -1,9 +1,11 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import * as THREE from 'three';
 import ControlPanel from './lib/components/ControlPanel';
 import { urlParam } from './lib/hooks/useUrlParams';
-import { REFERENCE_PHOTO } from './config/assets';
+// 二期暂时停用低多边形参考照片；恢复时把本文件里带「参考照片停用」的注释一起放开
+// import { REFERENCE_PHOTO } from './config/assets';
 import { GAME_TITLE } from './config/lore';
 import { DEFAULT_MODE, MODES } from './config/modes';
 import { prefetchSu7 } from './lib/prefetchSu7';
@@ -43,6 +45,10 @@ function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal', mobil
         antialias: isGame ? !mobileLayoutSync : true,
         preserveDrawingBuffer: !isGame,
         alpha: !isGame,
+        // 几猫同款：材质里做 ACES，不再开一条后处理通道
+        ...(isGame
+          ? { toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.08 }
+          : {}),
       }),
     [isGame, mobileLayoutSync],
   );
@@ -50,7 +56,7 @@ function ModeCanvas({ mode, autoRotate, controlsRef, canvasKey = 'normal', mobil
   return (
     <Canvas
       key={isGame ? `${mode}-${canvasKey}` : mode}
-      shadows={mode === 'lowpoly' || isGame}
+      shadows={isGame ? 'soft' : mode === 'lowpoly'}
       dpr={isGame && perf ? perf.dpr : isGame ? [1, 1.5] : [1, 2]}
       camera={cfg.camera}
       gl={glOptions}
@@ -86,9 +92,11 @@ export default function App() {
   const controlsRef = useRef();
   const initialMode = MODES[urlParam.string('mode')] ? urlParam.string('mode') : DEFAULT_MODE;
   const [mode, setMode] = useState(initialMode);
-  const [showRef, setShowRef] = useState(urlParam.bool('ref', true));
+  // 参考照片停用
+  // const [showRef, setShowRef] = useState(urlParam.bool('ref', true));
   const [autoRotate, setAutoRotate] = useState(urlParam.bool('auto', mode === 'lowpoly'));
-  const [overlay, setOverlay] = useState(urlParam.number('overlay', 0));
+  // 参考照片停用
+  // const [overlay, setOverlay] = useState(urlParam.number('overlay', 0));
   const gameMobile = useGameMobile();
   const [viewRotation, setViewRotation] = useState(() =>
     initialMode === 'game' && gameMobile.active && isPortraitViewport() ? 90 : 0,
@@ -149,22 +157,23 @@ export default function App() {
         onClick: () => setMode(key),
       })),
     },
-    {
-      type: 'slider',
-      label: '叠加参考图',
-      min: 0,
-      max: 1,
-      step: 0.05,
-      value: overlay,
-      onChange: setOverlay,
-      hidden: !isLowPoly,
-    },
-    {
-      type: 'button',
-      label: showRef ? '隐藏对照图' : '显示对照图',
-      onClick: () => setShowRef((v) => !v),
-      hidden: !isLowPoly,
-    },
+    // 参考照片停用
+    // {
+    //   type: 'slider',
+    //   label: '叠加参考图',
+    //   min: 0,
+    //   max: 1,
+    //   step: 0.05,
+    //   value: overlay,
+    //   onChange: setOverlay,
+    //   hidden: !isLowPoly,
+    // },
+    // {
+    //   type: 'button',
+    //   label: showRef ? '隐藏对照图' : '显示对照图',
+    //   onClick: () => setShowRef((v) => !v),
+    //   hidden: !isLowPoly,
+    // },
     {
       type: 'button',
       label: autoRotate ? '停止旋转' : '自动旋转',
@@ -187,12 +196,14 @@ export default function App() {
 
   const body = (
     <>
+      {/* 参考照片停用
       {showRef && isLowPoly && (
         <div className="frame ref">
           <img src={REFERENCE_PHOTO.url} alt="参考照片" />
           <span className="tag">参考照片</span>
         </div>
       )}
+      */}
 
       <div className={`frame${isGame ? ' wide' : ''}${mobileGame ? ' mobile-frame' : ''}`}>
         {mobileGame ? (
@@ -215,6 +226,7 @@ export default function App() {
           </>
         )}
 
+        {/* 参考照片停用
         {isLowPoly && (
           <img
             className="overlay"
@@ -224,6 +236,7 @@ export default function App() {
             draggable={false}
           />
         )}
+        */}
         {!isGame && <span className="tag">{cfg.tag}</span>}
 
         <ControlPanel items={panelItems} keyboardFocus={!isGame} />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import CombatHud from './CombatHud';
 import MapHudHeader from './MapHudHeader';
 import { combat, fx, world } from './stores/combatStore';
@@ -6,7 +6,7 @@ import { drift, BOOST_TIME, NITRO_COST, NITRO_MAX } from './stores/driftStore';
 import DeathQuote from './DeathQuote';
 import MobileMovePad from './mobile/MobileMovePad';
 import MobileRightPanel from './mobile/MobileRightPanel';
-import MobileWeaponBar from './mobile/MobileWeaponBar';
+import SystemMenu from './SystemMenu';
 import { WulaiTitle } from './skills/fx';
 import { summonVehicleForPlayer, vehicle } from './vehicles/runtime';
 
@@ -34,6 +34,21 @@ export default function GameHud({ mobileActive = false }) {
   });
   /** null = 跟上车状态：开车展开、步行折叠 */
   const [driveHudManual, setDriveHudManual] = useState(null);
+  /** 系统菜单（背包）。PC 点头像或 Esc，移动端点头像。打开时 SystemMenu 把 world.paused 设上 */
+  const [menuOpen, setMenuOpen] = useState(false);
+  const openMenu = useCallback(() => setMenuOpen(true), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+
+  useEffect(() => {
+    if (mobileActive) return undefined;
+    const onKey = (e) => {
+      if (e.code !== 'Escape' || e.repeat) return;
+      e.preventDefault();
+      setMenuOpen((open) => !open);
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [mobileActive]);
 
   useEffect(() => {
     setDriveHudManual(null);
@@ -84,9 +99,9 @@ export default function GameHud({ mobileActive = false }) {
       {!mobileActive && !v.inCar && v.nearCar && <div className="hud-flash interact">按 F 上车</div>}
       <div className={`hud-left${mobileActive ? ' hud-left--mobile' : ''}`}>
         <MapHudHeader />
-        <CombatHud mobileCompact={mobileActive} />
-        {mobileActive && <MobileWeaponBar />}
+        <CombatHud mobileCompact={mobileActive} onOpenMenu={openMenu} />
       </div>
+      {menuOpen && <SystemMenu pc={!mobileActive} onClose={closeMenu} />}
       <div className={`speedlines${v.boost > 0 ? ' on' : ''}`} />
       <div className={`speedlines fine${v.boost > 0 ? ' on' : ''}`} />
 

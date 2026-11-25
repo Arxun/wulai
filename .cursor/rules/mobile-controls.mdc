@@ -12,7 +12,7 @@ alwaysApply: false
 
 - 需要按住的操控区（方向键、攻击和技能键、驾驶键、上车键、画布）在 `useMobileInputGuard.js` 的 `HOLD_ZONES` 里统一取消 `touchstart`。新增按住类按钮时，必须放进这些容器，或者把选择器加进 `HOLD_ZONES`。
 - 这些按钮一律用 `onPointerDown` / `onPointerUp`，不用 `onClick`：`touchstart` 被取消后浏览器就不再派发 `click`。
-- 反过来，用 `onClick` 的按钮（武器栏、载具、HUD 折叠、加载遮罩）**不能**放进 `HOLD_ZONES`，否则点了没反应。
+- 反过来，用 `onClick` 的按钮（头像、系统菜单 / 背包、载具、HUD 折叠、加载遮罩）**不能**放进 `HOLD_ZONES`，否则点了没反应。
 - CSS 保留 `user-select: none`、`-webkit-touch-callout: none`、`touch-action: none`。全局的 `contextmenu`、`selectstart`、双指缩放拦截不要删。
 - 系统级手势（比如长按导航条唤起识屏）网页拦不住，只能保证在游戏区域里长按不会触发。
 

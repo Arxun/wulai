@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resetMoves, tickMoves } from '../../../lib/animation/combatMoves';
 import { HERO } from '../hero/def';
+import { GAME_PERF } from '../config/perf';
 import { HALF, MAP_SIZE, SPAWN, groundMeshHeight, terrainHeight } from '../maps/huangshan/heightfield';
 import { resolvePlayerObstacles, SU7_SPAWN } from '../maps/huangshan/obstacles';
 import { activeMap, DEFAULT_MAP_ID, getMapId, MAPS, setMapId } from '../maps/registry';
@@ -39,7 +40,24 @@ import {
 } from '../stores/gameLoadingStore';
 import * as THREE from 'three';
 import { resetDrift, drift, NITRO_MAX, tryActivateNitro, BOOST_TIME } from '../stores/driftStore';
-import { combat, world } from '../stores/combatStore';
+import {
+  POTION_ORDER,
+  POTIONS,
+  WEAPONS,
+  combat,
+  equipWeapon,
+  grantWeapon,
+  liveStats,
+  unequipWeapon,
+  loot,
+  resetCombat,
+  setQuickPotion,
+  spawnLoot,
+  statsAt,
+  tryPickup,
+  usePotion,
+  world,
+} from '../stores/combatStore';
 import { FX_LIGHT_SLOTS, pickFxLights, requestFxLight, resetFxLights } from '../fx/fxLightStore';
 import { vehicle as vehicleRuntime } from '../vehicles/runtime';
 
@@ -69,7 +87,7 @@ describe('地图模块 maps/', () => {
   });
 
   it('地面网格顶点高度和高度场一致', () => {
-    const seg = 176;
+    const seg = GAME_PERF.terrainSegments;
     const cell = MAP_SIZE / seg;
     const x = -HALF + 40 * cell;
     const z = HALF - 20 * cell;
@@ -442,6 +460,198 @@ describe('怪物合批 monsters/monsterBatch', () => {
         expect(total).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('背包 stores/combatStore：血药与换武器', () => {
+  beforeEach(() => {
+    resetCombat();
+    world.x = 0;
+    world.y = 0;
+    world.z = 0;
+  });
+  afterEach(() => resetCombat());
+
+  const hurtTo = (hp) => {
+    combat.hp = hp;
+  };
+
+  it('血药按档位登记，回血量逐档变大，颜色齐全', () => {
+    expect(POTION_ORDER.length).toBeGreaterThanOrEqual(3);
+    expect(Object.keys(POTIONS).sort()).toEqual([...POTION_ORDER].sort());
+    let prev = 0;
+    for (const id of POTION_ORDER) {
+      const p = POTIONS[id];
+      expect(p.id).toBe(id);
+      expect(p.name).toBeTruthy();
+      expect(p.hp).toBeGreaterThan(prev);
+      expect(p.color).toMatch(/^#[0-9a-f]{6}$/i);
+      expect(p.glow).toMatch(/^#[0-9a-f]{6}$/i);
+      prev = p.hp;
+    }
+  });
+
+  it('怪物掉落表里的每一项都是已登记的武器或血药，概率在 (0, 1]', () => {
+    const dropped = new Set();
+    for (const [kind, def] of Object.entries(MONSTER_KINDS)) {
+      for (const [id, p] of Object.entries(def.drop)) {
+        expect(WEAPONS[id] || POTIONS[id], `${kind} 掉落 ${id}`).toBeTruthy();
+        expect(p).toBeGreaterThan(0);
+        expect(p).toBeLessThanOrEqual(1);
+        dropped.add(id);
+      }
+    }
+    for (const id of POTION_ORDER) expect(dropped.has(id), `没有怪掉 ${id}`).toBe(true);
+  });
+
+  it('Q 默认喝回血丹：扣一瓶、按药效回血，满血不浪费', () => {
+    expect(combat.quickPot).toBe('hp');
+    expect(combat.pots.hp).toBe(1);
+    expect(usePotion()).toBe(false);
+    expect(combat.pots.hp).toBe(1);
+
+    hurtTo(10);
+    expect(usePotion()).toBe(true);
+    expect(combat.hp).toBe(10 + POTIONS.hp.hp);
+    expect(combat.pots.hp).toBe(0);
+    expect(usePotion()).toBe(false);
+  });
+
+  it('回血不会超过生命上限', () => {
+    const { maxHp } = statsAt(combat.level);
+    combat.pots.hpBig = 1;
+    hurtTo(maxHp - 5);
+    expect(usePotion('hpBig')).toBe(true);
+    expect(combat.hp).toBe(maxHp);
+  });
+
+  it('背包里选了哪种药，Q 就喝哪种；没货的不能选', () => {
+    expect(setQuickPotion('hpMid')).toBe(false);
+    expect(setQuickPotion('nope')).toBe(false);
+    expect(combat.quickPot).toBe('hp');
+
+    combat.pots.hpMid = 2;
+    expect(setQuickPotion('hpMid')).toBe(true);
+    expect(combat.quickPot).toBe('hpMid');
+
+    hurtTo(1);
+    combat.level = 30;
+    expect(usePotion()).toBe(true);
+    expect(combat.hp).toBe(1 + POTIONS.hpMid.hp);
+    expect(combat.pots.hpMid).toBe(1);
+    expect(combat.pots.hp).toBe(1);
+    expect(combat.quickPot).toBe('hpMid');
+  });
+
+  it('Q 槽的药喝完后换成背包里还有的最低一档；全喝完时保持原选择', () => {
+    combat.level = 30;
+    combat.pots.hpMid = 1;
+    combat.pots.hpBig = 1;
+    setQuickPotion('hpBig');
+
+    hurtTo(1);
+    expect(usePotion()).toBe(true);
+    expect(combat.pots.hpBig).toBe(0);
+    expect(combat.quickPot).toBe('hp');
+
+    hurtTo(1);
+    expect(usePotion()).toBe(true);
+    expect(combat.quickPot).toBe('hpMid');
+
+    hurtTo(1);
+    expect(usePotion()).toBe(true);
+    expect(combat.quickPot).toBe('hpMid');
+    expect(POTION_ORDER.every((id) => combat.pots[id] === 0)).toBe(true);
+
+    hurtTo(1);
+    expect(usePotion()).toBe(false);
+    expect(combat.hp).toBe(1);
+  });
+
+  it('捡到的药进对应的格子；Q 槽空着时捡到的药顶上，有货时不改选择', () => {
+    loot.length = 0;
+    spawnLoot(0, 0, 'hpMid');
+    tryPickup(0, 0);
+    expect(loot.length).toBe(0);
+    expect(combat.pots.hpMid).toBe(1);
+    expect(combat.pots.hp).toBe(1);
+    expect(combat.quickPot).toBe('hp');
+
+    combat.pots.hp = 0;
+    combat.pots.hpMid = 0;
+    spawnLoot(0, 0, 'hpBig');
+    tryPickup(0, 0);
+    expect(combat.pots.hpBig).toBe(1);
+    expect(combat.quickPot).toBe('hpBig');
+  });
+
+  it('人死了不能喝药', () => {
+    hurtTo(1);
+    combat.dead = true;
+    expect(usePotion()).toBe(false);
+    expect(combat.pots.hp).toBe(1);
+  });
+
+  it('没拿到的武器装备不上；捡到后在背包里换，提示不再提数字键', () => {
+    expect(equipWeapon('iron')).toBe(false);
+    expect(combat.weapon).toBe('wood');
+
+    loot.length = 0;
+    spawnLoot(0, 0, 'iron');
+    tryPickup(0, 0);
+    expect(combat.owned.iron).toBe(true);
+    expect(combat.weapon).toBe('wood');
+    expect(combat.toast).toContain('背包');
+    expect(combat.toast).not.toMatch(/按 \d/);
+
+    expect(grantWeapon('iron')).toBe(false);
+    expect(equipWeapon('iron')).toBe(true);
+    expect(combat.weapon).toBe('iron');
+  });
+
+  it('卸下武器后是空手，攻击只剩人物底板', () => {
+    expect(unequipWeapon()).toBe(true);
+    expect(combat.weapon).toBe('');
+    const base = statsAt(combat.level);
+    expect(liveStats().atk).toBe(base.atk);
+    expect(liveStats().weaponAtk).toBe(0);
+    expect(liveStats().weaponName).toBe('未装备');
+    expect(unequipWeapon()).toBe(false);
+    expect(equipWeapon('wood')).toBe(true);
+  });
+
+  it('重置战斗会取消系统菜单的暂停', () => {
+    world.paused = true;
+    resetCombat();
+    expect(world.paused).toBe(false);
+  });
+
+  it('技能栏分开记录电脑键盘和手机按钮，并和实际出招键一致', async () => {
+    const { SKILL_BINDS } = await import('../skills/binds');
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
+    const player = read('../hero/Player.jsx');
+    const mobile = read('../mobile/MobileRightPanel.jsx');
+    expect(SKILL_BINDS.map((s) => s.id)).toEqual(['attack', 'skill', 'whirl', 'wulai']);
+    expect(SKILL_BINDS.map((s) => s.pc)).toEqual(['J', 'K', 'E', 'R']);
+    for (const s of SKILL_BINDS) {
+      expect(s.mobile, s.id).toBeTruthy();
+      expect(player).toContain(`Key${s.pc}`);
+    }
+    expect(mobile).toContain("code: 'KeyK'");
+    expect(mobile).toContain("code: 'KeyE'");
+    expect(mobile).toContain("code: 'KeyR'");
+    expect(mobile).toContain("emitMobilePress('KeyJ')");
+    expect(read('../SystemMenu.jsx')).toContain("label: '技能'");
+  });
+
+  it('数字键不再是游戏键（换武器只在背包里）', () => {
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
+    expect(read('../../../lib/hooks/useKeyboard.js')).not.toMatch(/Digit|Numpad/);
+    expect(read('../hero/Player.jsx')).not.toMatch(/Digit|Numpad|equipWeapon/);
+    expect(read('../SystemMenu.jsx')).not.toMatch(/未获得/);
+    expect(read('../GameHud.jsx')).toMatch(/Escape/);
+    expect(read('../hero/Player.jsx')).toMatch(/world\.paused/);
+    expect(read('../monsters/Monsters.jsx')).toMatch(/world\.paused/);
   });
 });
 

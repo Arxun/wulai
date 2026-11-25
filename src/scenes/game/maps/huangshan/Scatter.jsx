@@ -46,7 +46,7 @@ function scatter({ count, seed, height = [-99, 99], maxSlope = 0.5, minPath = 4,
  * 一组共用几何体的物件。每种变体一个 InstancedMesh：
  * 几何体在 GPU 上只有一份，100 棵树也是 1 次绘制，地图放大才不会按棵数卡。
  */
-function VariantBatch({ items, geometry, roughness, sink, scale, castShadow }) {
+function VariantBatch({ items, geometry, roughness, sink, scale, castShadow, flat = true }) {
   const mesh = useRef();
   useLayoutEffect(() => {
     const m = mesh.current;
@@ -72,12 +72,12 @@ function VariantBatch({ items, geometry, roughness, sink, scale, castShadow }) {
       receiveShadow={false}
       frustumCulled={false}
     >
-      <meshStandardMaterial flatShading vertexColors roughness={roughness} side={THREE.DoubleSide} />
+      <meshStandardMaterial flatShading={flat} vertexColors roughness={roughness} side={THREE.DoubleSide} />
     </instancedMesh>
   );
 }
 
-function Cluster({ items, variants, roughness = 0.9, sink = 0.15, scale = 1, castShadow = true }) {
+function Cluster({ items, variants, roughness = 0.9, sink = 0.15, scale = 1, castShadow = true, flat = true }) {
   const groups = useMemo(() => {
     const g = variants.map(() => []);
     for (const it of items) g[it.v % variants.length].push(it);
@@ -95,6 +95,7 @@ function Cluster({ items, variants, roughness = 0.9, sink = 0.15, scale = 1, cas
           sink={sink}
           scale={scale}
           castShadow={castShadow}
+          flat={flat}
         />
       ))}
     </group>
@@ -123,14 +124,14 @@ export default function Scatter() {
         makeBroadleafGeometry({ height: 7.5, seed: 13, palette: ['#48612f', '#577038', '#3f5729'] }),
       ],
       rock: [
-        makeRockGeometry(31, 0.8, { color: '#7c7872', detail: 1 }),
-        makeRockGeometry(32, 0.62, { color: '#8a837a', detail: 1 }),
-        makeRockGeometry(33, 0.9, { color: '#6e6b66', detail: 1 }),
+        makeRockGeometry(31, 0.8, { color: '#7c7872', detail: 2, smooth: { crease: 38 } }),
+        makeRockGeometry(32, 0.62, { color: '#8a837a', detail: 2, smooth: { crease: 38 } }),
+        makeRockGeometry(33, 0.9, { color: '#6e6b66', detail: 2, smooth: { crease: 38 } }),
       ],
       boulder: [
-        makeRockGeometry(41, 0.78, { color: '#767269', detail: 2 }),
-        makeRockGeometry(42, 0.66, { color: '#827b71', detail: 2 }),
-        makeRockGeometry(43, 0.85, { color: '#6b675f', detail: 2 }),
+        makeRockGeometry(41, 0.78, { color: '#767269', detail: 2, smooth: { crease: 34 } }),
+        makeRockGeometry(42, 0.66, { color: '#827b71', detail: 2, smooth: { crease: 34 } }),
+        makeRockGeometry(43, 0.85, { color: '#6b675f', detail: 2, smooth: { crease: 34 } }),
       ],
     }),
     [],
@@ -164,11 +165,11 @@ export default function Scatter() {
 
   return (
     <group>
-      <Cluster items={items.conifer} variants={geo.conifer} roughness={0.85} sink={0.3} />
-      <Cluster items={items.pine} variants={geo.pine} roughness={0.85} sink={0.2} castShadow={false} />
-      <Cluster items={items.broadleaf} variants={geo.broadleaf} roughness={0.88} sink={0.25} castShadow={false} />
-      <Cluster items={items.rock} variants={geo.rock} roughness={1} sink={0.3} scale={0.4} castShadow={false} />
-      <Cluster items={items.boulder} variants={geo.boulder} roughness={1} sink={0.4} scale={1.5} castShadow={false} />
+      <Cluster items={items.conifer} variants={geo.conifer} roughness={0.85} sink={0.3} flat={false} />
+      <Cluster items={items.pine} variants={geo.pine} roughness={0.85} sink={0.2} castShadow={false} flat={false} />
+      <Cluster items={items.broadleaf} variants={geo.broadleaf} roughness={0.88} sink={0.25} castShadow={false} flat={false} />
+      <Cluster items={items.rock} variants={geo.rock} roughness={1} sink={0.3} scale={0.4} castShadow={false} flat={false} />
+      <Cluster items={items.boulder} variants={geo.boulder} roughness={1} sink={0.4} scale={1.5} castShadow={false} flat={false} />
       <FacetMesh geometry={grass} roughness={0.95} castShadow={false} receiveShadow={false} side={2} />
     </group>
   );

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import FacetMesh from '../../../../lib/components/FacetMesh';
+import { smoothNormals } from '../../../../lib/geometry/normals';
 import { makeMountainRange } from '../../../../lib/geometry/terrain';
 import { applyFaceTint } from '../../../../lib/geometry/vertexColor';
 import { fbm2 } from '../../../../lib/math/noise';
@@ -198,8 +199,8 @@ function buildBorder(pos, colors, eps) {
   geo.setIndex(dstI);
   const flat = geo.toNonIndexed();
   geo.dispose();
-  flat.computeVertexNormals();
   applyFaceTint(flat, 0.05, 8);
+  smoothNormals(flat, { crease: 36 });
   return flat;
 }
 
@@ -231,15 +232,14 @@ function Ground() {
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     const nonIdx = g.toNonIndexed();
     g.dispose();
-    nonIdx.computeVertexNormals();
-    applyFaceTint(nonIdx, 0.05, 4);
+    smoothNormals(nonIdx, { crease: 36 });
     return { inner: nonIdx, border };
   }, []);
 
   return (
     <>
-      <FacetMesh geometry={geom.inner} roughness={1} castShadow={false} />
-      <FacetMesh geometry={geom.border} roughness={1} castShadow={false} receiveShadow={false} side={THREE.DoubleSide} />
+      <FacetMesh geometry={geom.inner} roughness={1} castShadow={false} smooth />
+      <FacetMesh geometry={geom.border} roughness={1} castShadow={false} receiveShadow={false} side={THREE.DoubleSide} smooth />
     </>
   );
 }

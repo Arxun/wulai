@@ -37,14 +37,14 @@ export function statsAt(level) {
   };
 }
 
-/** 武器表。atk 是加算。 */
+/** 武器表。atk 是加算；color 只给背包格子上色用。 */
 export const WEAPONS = {
-  wood: { id: 'wood', name: '木质登山杖', atk: 10, hint: '出门随便砍的一根' },
-  iron: { id: 'iron', name: '玄铁短戟', atk: 28, hint: '路边铁匠随手打的' },
-  frost: { id: 'frost', name: '霜华杖', atk: 48, hint: '杖头结着不化的冰' },
-  ember: { id: 'ember', name: '赤焰矛', atk: 76, hint: '矛尖一直在烧' },
-  storm: { id: 'storm', name: '雷纹刀', atk: 118, hint: '刃上走着细雷' },
-  blood: { id: 'blood', name: '血棘魔剑', atk: 156, hint: '刃上长着会动的血刺' },
+  wood: { id: 'wood', name: '木质登山杖', atk: 10, color: '#e4d0a4', hint: '出门随便砍的一根', desc: '山路上随手折下的木杖。不趁手，但出门总比空着手强。' },
+  iron: { id: 'iron', name: '玄铁短戟', atk: 28, color: '#c5cdd6', hint: '路边铁匠随手打的', desc: '铁匠铺里打出来的短戟，分量压手，戳出去比木杖疼得多。' },
+  frost: { id: 'frost', name: '霜华杖', atk: 48, color: '#b7e7ff', hint: '杖头结着不化的冰', desc: '杖头凝着一层不化的霜。打在身上先是疼，接着是麻。' },
+  ember: { id: 'ember', name: '赤焰矛', atk: 76, color: '#ff7a2a', hint: '矛尖一直在烧', desc: '矛尖常年烧着。靠近时能感到热气，刺中会多带一层灼痛。' },
+  storm: { id: 'storm', name: '雷纹刀', atk: 118, color: '#9ecbff', hint: '刃上走着细雷', desc: '刀身刻着雷纹，挥起来有细碎的电光顺着刃走。' },
+  blood: { id: 'blood', name: '血棘魔剑', atk: 156, color: '#ff2040', hint: '刃上长着会动的血刺', desc: '剑脊上生着会动的血刺。拿着它的时候，手心总是热的。' },
 };
 
 export const WEAPON_ORDER = ['wood', 'iron', 'frost', 'ember', 'storm', 'blood'];
@@ -53,10 +53,19 @@ export const WEAPON_ORDER = ['wood', 'iron', 'frost', 'ember', 'storm', 'blood']
 export const MP_REGEN_BASE = 3.2;
 export const MP_REGEN_PER_SEC = MP_REGEN_BASE * 0.7;
 
-/** 消耗品：走近地上的瓶子捡起来，Q 喝 */
+/**
+ * 血药：走近地上的瓶子捡起来，进背包。Q 键喝哪一种在背包里选（combat.quickPot）。
+ * color / glow 是瓶身和光晕的颜色，地上的掉落物和背包格子共用。
+ */
 export const POTIONS = {
-  hp: { id: 'hp', name: '回血丹', hp: 72, key: 'Q' },
+  hp: { id: 'hp', name: '回血丹', hp: 72, color: '#d63a32', glow: '#ff6a55', hint: '山脚药铺的寻常丹药', desc: '山脚药铺随处可买的丹药。苦，但能把伤口慢慢合上。' },
+  hpMid: { id: 'hpMid', name: '凝元丹', hp: 180, color: '#e0942a', glow: '#ffc266', hint: '精怪身上才摸得到', desc: '从精怪身上搜出来的丹药，药力比寻常回血丹厚实一截。' },
+  hpBig: { id: 'hpBig', name: '还魂丹', hp: 420, color: '#a04ae0', glow: '#d49bff', hint: '只有大妖才舍得带', desc: '大妖才带在身上的丹药。一口气灌下去，像把人从鬼门关拽回来。' },
 };
+
+export const POTION_ORDER = ['hp', 'hpMid', 'hpBig'];
+
+const START_POTS = { hp: 1, hpMid: 0, hpBig: 0 };
 
 export const combat = {
   level: 1,
@@ -65,7 +74,9 @@ export const combat = {
   mp: BASE.mp,
   weapon: 'wood',
   owned: { wood: true },
-  pots: { hp: 1 },
+  pots: { ...START_POTS },
+  /** Q 键喝的血药 id，在背包里选 */
+  quickPot: 'hp',
   toast: '',
   toastAge: 0,
   dead: false,
@@ -107,7 +118,8 @@ export function resetCombat() {
   combat.mp = BASE.mp;
   combat.weapon = 'wood';
   combat.owned = { wood: true };
-  combat.pots = { hp: 1 };
+  combat.pots = { ...START_POTS };
+  combat.quickPot = 'hp';
   combat.toast = '';
   combat.toastAge = 0;
   combat.dead = false;
@@ -118,6 +130,7 @@ export function resetCombat() {
   combat.whirlCd = 0;
   resetMoves(world);
   world.striking = false;
+  world.paused = false;
   fx.shake = 0;
   fx.stop = 0;
   fx.knockX = 0;
@@ -128,7 +141,7 @@ export function resetCombat() {
   spawnMapStarterLoot();
 }
 
-/** 西北角固定掉落：HUD 6 号「血棘魔剑」，需走近拾取 */
+/** 西北角固定掉落：「血棘魔剑」，需走近拾取 */
 export function spawnMapStarterLoot() {
   if (combat.owned.blood) return;
   if (loot.some((it) => it.id === 'blood')) return;
@@ -137,12 +150,12 @@ export function spawnMapStarterLoot() {
 
 export function liveStats() {
   const s = statsAt(combat.level);
-  const w = WEAPONS[combat.weapon] || WEAPONS.wood;
+  const w = WEAPONS[combat.weapon];
   return {
     ...s,
-    atk: s.atk + w.atk,
-    weaponAtk: w.atk,
-    weaponName: w.name,
+    atk: s.atk + (w ? w.atk : 0),
+    weaponAtk: w ? w.atk : 0,
+    weaponName: w ? w.name : '未装备',
     xpNeed: xpToNext(combat.level),
   };
 }
@@ -210,8 +223,7 @@ export function healTo(frac = 0.55) {
 export function grantWeapon(id) {
   if (!WEAPONS[id] || combat.owned[id]) return false;
   combat.owned[id] = true;
-  const slot = WEAPON_ORDER.indexOf(id) + 1;
-  combat.toast = `获得 ${WEAPONS[id].name} · 按 ${slot} 装备`;
+  combat.toast = `获得 ${WEAPONS[id].name} · 点头像打开背包装备`;
   combat.toastAge = 3.6;
   return true;
 }
@@ -224,17 +236,54 @@ export function equipWeapon(id) {
   return true;
 }
 
-export function usePotion(kind) {
-  if (combat.dead || kind !== 'hp') return false;
-  if ((combat.pots.hp || 0) <= 0) return false;
+/** 卸下当前武器。空手时攻击只剩人物底板。 */
+export function unequipWeapon() {
+  const w = WEAPONS[combat.weapon];
+  if (!w) return false;
+  combat.weapon = '';
+  combat.toast = `卸下 ${w.name}`;
+  combat.toastAge = 1.6;
+  return true;
+}
+
+/**
+ * Q 槽里的药没货了，就换成背包里还有的最低一档（先喝便宜的）。
+ * 什么药都没有时保持原选择。返回是否换了。
+ */
+function refillQuickPot() {
+  if ((combat.pots[combat.quickPot] || 0) > 0) return false;
+  const next = POTION_ORDER.find((id) => (combat.pots[id] || 0) > 0);
+  if (!next) return false;
+  combat.quickPot = next;
+  return true;
+}
+
+/** 背包里选 Q 键喝哪种药。没货的不能选。 */
+export function setQuickPotion(id) {
+  if (!POTIONS[id] || (combat.pots[id] || 0) <= 0) return false;
+  combat.quickPot = id;
+  combat.toast = `Q 键用药：${POTIONS[id].name}`;
+  combat.toastAge = 1.6;
+  return true;
+}
+
+/** 喝一瓶血药。不传 id 就喝 Q 槽里选的那种。 */
+export function usePotion(id = combat.quickPot) {
+  const pot = POTIONS[id];
+  if (combat.dead || !pot) return false;
+  if ((combat.pots[id] || 0) <= 0) return false;
   const s = statsAt(combat.level);
   if (combat.hp >= s.maxHp - 0.5) return false;
-  combat.pots.hp -= 1;
-  const add = Math.min(POTIONS.hp.hp, s.maxHp - combat.hp);
+  combat.pots[id] -= 1;
+  const add = Math.min(pot.hp, s.maxHp - combat.hp);
   combat.hp += add;
   spawnFloat(world.x, world.y + 1.7, world.z, `+${Math.round(add)}`, '#7dff9a', 1.05);
-  combat.toast = `喝下回血丹 +${Math.round(add)}`;
+  combat.toast = `喝下${pot.name} +${Math.round(add)}`;
   combat.toastAge = 1.8;
+  if (refillQuickPot()) {
+    combat.toast += ` · Q 换成${POTIONS[combat.quickPot].name}`;
+    combat.toastAge = 2.6;
+  }
   return true;
 }
 
@@ -259,16 +308,18 @@ export function rollDrops(table, x, z) {
 
 const PICK_R = 1.6;
 
-/** 走到掉落物旁边就捡。武器进背包（要按数字键穿上），药直接进格子。 */
+/** 走到掉落物旁边就捡。武器和药都进背包：武器在背包里装备，药在背包里选 Q 键喝哪种。 */
 export function tryPickup(x, z) {
   for (let i = loot.length - 1; i >= 0; i--) {
     const it = loot[i];
     if (Math.hypot(it.x - x, it.z - z) > PICK_R) continue;
     loot.splice(i, 1);
-    if (it.id === 'hp') {
-      combat.pots.hp += 1;
-      const pot = POTIONS.hp;
-      combat.toast = `捡到${pot.name} · 按 ${pot.key} 使用`;
+    const pot = POTIONS[it.id];
+    if (pot) {
+      combat.pots[pot.id] = (combat.pots[pot.id] || 0) + 1;
+      refillQuickPot();
+      combat.toast =
+        combat.quickPot === pot.id ? `捡到${pot.name} · 按 Q 使用` : `捡到${pot.name} · 已放进背包`;
       combat.toastAge = 2.6;
     } else if (!grantWeapon(it.id)) {
       combat.toast = '已经有这件武器了';
@@ -324,6 +375,8 @@ export const world = {
   spin: 0,
   /** 大招霸体：锁移动 / 普攻 */
   lock: false,
+  /** 系统菜单开着：人物、怪物、载具都停在这一帧 */
+  paused: false,
   /** 武来冲击波当前半径 */
   waveR: 0,
   /** 这一发大招是否已经砸出深坑 */
