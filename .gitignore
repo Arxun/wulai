@@ -10,4 +10,6 @@ tools/image-to-3d/out
 tools/image-to-3d/weights/*.ckpt
 tools/image-to-3d/weights/*.safetensors
 tools/image-to-3d/__pycache__
+# 浏览器用户目录，不是建模流程的一部分
+tools/image-to-3d/chrome-profile/
 **/__pycache__
