@@ -12,7 +12,6 @@ import NitroFlame from '../../NitroFlame';
 import { world } from '../../stores/combatStore';
 import { drift } from '../../stores/driftStore';
 import { guardFrame } from '../../debug/reportError';
-import { terrainHeight } from '../../maps/huangshan/heightfield';
 import { vehicle } from '../runtime';
 
 function Su7Car({ bodyColor = '#26d6e9' }) {
@@ -22,7 +21,7 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
   const bustWrap = useRef();
   /** replica `Car.wheelModel` */
   const wheelModel = useRef(null);
-  const lastPose = useRef({ x: NaN, z: NaN, yaw: NaN, sink: NaN, scale: NaN });
+  const lastPose = useRef({ x: NaN, z: NaN, yaw: NaN, pitch: NaN, roll: NaN, gy: NaN, sink: NaN, scale: NaN });
 
   const scene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
@@ -83,15 +82,23 @@ function Su7Car({ bodyColor = '#26d6e9' }) {
     }
     const root = carRoot.current;
     if (root) {
-      const { carX, carZ, carYaw, sink, scale } = vehicle;
+      const { carX, carZ, carYaw, carPitch, carRoll, carGroundY, sink, scale } = vehicle;
       const lp = lastPose.current;
-      if (lp.x !== carX || lp.z !== carZ || lp.yaw !== carYaw || lp.sink !== sink || lp.scale !== scale) {
-        root.position.set(carX, terrainHeight(carX, carZ) - sink, carZ);
-        root.rotation.set(0, carYaw, 0);
+      if (
+        lp.x !== carX || lp.z !== carZ || lp.yaw !== carYaw || lp.pitch !== carPitch || lp.roll !== carRoll
+        || lp.gy !== carGroundY || lp.sink !== sink || lp.scale !== scale
+      ) {
+        const y = Number.isFinite(carGroundY) ? carGroundY : 0;
+        root.position.set(carX, y, carZ);
+        root.rotation.order = 'YXZ';
+        root.rotation.set(carPitch || 0, carYaw, carRoll || 0);
         root.scale.setScalar(scale);
         lp.x = carX;
         lp.z = carZ;
         lp.yaw = carYaw;
+        lp.pitch = carPitch;
+        lp.roll = carRoll;
+        lp.gy = carGroundY;
         lp.sink = sink;
         lp.scale = scale;
       }

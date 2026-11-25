@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { SKILL_BINDS } from './skills/binds';
+import { SAVE_PAGE_SIZE, SAVE_PAGES, loadSlot, readBook, saveToSlot } from './stores/saveStore';
 import {
   POTION_ORDER,
   POTIONS,
@@ -15,7 +16,7 @@ import {
 } from './stores/combatStore';
 
 /**
- * 全屏系统菜单，从左侧滑入。目前只有背包：
+ * 全屏系统菜单，从左侧滑入。背包、技能、存档：
  *   装备和道具用标签切换，格子保持固定大小，有多少排多少，多了在左侧滚；
  *   右侧介绍栏从顶到底。点一格后在这里装备 / 卸下，或者服用 / 设为 Q 键。
  *
@@ -27,7 +28,140 @@ import {
 const TABS = [
   { id: 'bag', label: '背包' },
   { id: 'skill', label: '技能' },
+  { id: 'save', label: '存档' },
 ];
+
+function skillNames(ids) {
+  return (ids || []).map((id) => SKILL_BINDS.find((s) => s.id === id)?.name || id).join('、');
+}
+
+function formatWhen(ms) {
+  const d = new Date(ms);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function SaveScreen({ onClose }) {
+  const [slots, setSlots] = useState(() => readBook().slots);
+  const [page, setPage] = useState(0);
+  const [index, setIndex] = useState(0);
+  const [confirm, setConfirm] = useState(false);
+  const [note, setNote] = useState('');
+  const slot = slots[index];
+  const start = page * SAVE_PAGE_SIZE;
+
+  const refresh = () => setSlots(readBook().slots);
+
+  const pick = (i) => {
+    setIndex(i);
+    setConfirm(false);
+    setNote('');
+  };
+
+  const goPage = (next) => {
+    const p = Math.max(0, Math.min(SAVE_PAGES - 1, next));
+    setPage(p);
+    pick(p * SAVE_PAGE_SIZE);
+  };
+
+  const save = () => {
+    if (slot && !confirm) {
+      setConfirm(true);
+      setNote('这格已经有档。再点一次覆盖。');
+      return;
+    }
+    const res = saveToSlot(index);
+    setConfirm(false);
+    if (!res.ok) {
+      setNote(res.reason);
+      return;
+    }
+    refresh();
+    setNote(res.overwrite ? '已覆盖这一档。' : '已保存。');
+  };
+
+  const load = () => {
+    const res = loadSlot(index);
+    if (!res.ok) {
+      setNote(res.reason);
+      return;
+    }
+    onClose();
+  };
+
+  return (
+    <div className="sysmenu__stage">
+      <div className="sysmenu__main">
+        <div className="sysmenu-save__pages" aria-label="存档页">
+          <button type="button" disabled={page === 0} onClick={() => goPage(page - 1)}>上一页</button>
+          {Array.from({ length: SAVE_PAGES }, (_, p) => (
+            <button
+              key={p}
+              type="button"
+              className={p === page ? 'on' : ''}
+              aria-pressed={p === page}
+              onClick={() => goPage(p)}
+            >
+              {p + 1}
+            </button>
+          ))}
+          <button type="button" disabled={page === SAVE_PAGES - 1} onClick={() => goPage(page + 1)}>下一页</button>
+        </div>
+        <div className="sysmenu__bags">
+          <p className="sysmenu__skill-note">
+            存在这台设备上。第 {page + 1} / {SAVE_PAGES} 页，每页 {SAVE_PAGE_SIZE} 档。空档直接存，有档再点一次就覆盖。
+          </p>
+          <div className="sysmenu-skills" aria-label="存档">
+            {Array.from({ length: SAVE_PAGE_SIZE }, (_, n) => {
+              const i = start + n;
+              const row = slots[i];
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className={`sysmenu-skill${i === index ? ' on' : ''}`}
+                  aria-pressed={i === index}
+                  onClick={() => pick(i)}
+                >
+                  <b>存档 {i + 1}</b>
+                  <span className="sysmenu-save__meta">
+                    {row ? `Lv.${row.level} · ${row.place}` : '空档'}
+                  </span>
+                  <span className="sysmenu-save__meta">{row ? formatWhen(row.savedAt) : ''}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <aside className="sysmenu__detail" aria-label="存档内容">
+        <p className="sysmenu__kind">存档 {index + 1}</p>
+        {slot ? (
+          <>
+            <h3>Lv.{slot.level} · {slot.place}</h3>
+            <p className="sysmenu__stat">生命 {Math.round(slot.hp)} · 蓝 {Math.round(slot.mp)} · 经验 {slot.xp}</p>
+            <p className="sysmenu__stat">位置 {Math.round(slot.x)} , {Math.round(slot.z)}{slot.inCar ? ' · 在车上' : ''}</p>
+            <p className="sysmenu__desc">装备 {WEAPONS[slot.weapon]?.name || '未装备'}</p>
+            <p className="sysmenu__desc">
+              道具 {POTION_ORDER.filter((id) => slot.pots[id] > 0).map((id) => `${POTIONS[id].name} ×${slot.pots[id]}`).join('、') || '无'}
+            </p>
+            <p className="sysmenu__desc">已学技能 {skillNames(slot.skills)}</p>
+          </>
+        ) : (
+          <>
+            <h3>空档</h3>
+            <p className="sysmenu__desc">保存会记下现在的位置、等级、道具、装备和已学的技能。</p>
+          </>
+        )}
+        {note && <p className="sysmenu__stat">{note}</p>}
+        <div className="sysmenu__actions">
+          <button type="button" onClick={save}>{confirm ? '确认覆盖' : slot ? '覆盖' : '保存'}</button>
+          <button type="button" disabled={!slot} onClick={load}>读取</button>
+        </div>
+      </aside>
+    </div>
+  );
+}
 
 function bagSignature() {
   let sig = `${combat.weapon}|${combat.quickPot}|${combat.level}|${Math.ceil(combat.hp)}|${combat.dead ? 1 : 0}|`;
@@ -394,6 +528,7 @@ export default function SystemMenu({ onClose, pc = false }) {
         </header>
         {tab === 'bag' && <BagScreen />}
         {tab === 'skill' && <SkillScreen pc={pc} />}
+        {tab === 'save' && <SaveScreen onClose={onClose} />}
       </div>
     </div>
   );

@@ -4,7 +4,9 @@ import { resetMoves, tickMoves } from '../../../lib/animation/combatMoves';
 import { HERO } from '../hero/def';
 import { GAME_PERF } from '../config/perf';
 import { HALF, MAP_SIZE, SPAWN, groundMeshHeight, terrainHeight } from '../maps/huangshan/heightfield';
-import { resolvePlayerObstacles, SU7_SPAWN } from '../maps/huangshan/obstacles';
+import { resolveDriveBlockers, resolvePlayerObstacles, SU7_SPAWN } from '../maps/huangshan/obstacles';
+import { getHuangshanProps } from '../maps/huangshan/props';
+import { carPoseGap, fitCarToGround } from '../vehicles/carGround';
 import { activeMap, DEFAULT_MAP_ID, getMapId, MAPS, setMapId } from '../maps/registry';
 import { MONSTER_KINDS } from '../monsters/kinds';
 import { pickMonsterOnRay } from '../monsters/pick';
@@ -218,6 +220,80 @@ describe('碰撞 obstacles', () => {
     });
     expect(r.hit).toBe(true);
     expect(Math.hypot(r.x - vehicle.carX, r.z - vehicle.carZ)).toBeGreaterThan(0.01);
+  });
+
+  it('山路上开车不会被树挡住，开进巨石会被顶出来', () => {
+    expect(resolveDriveBlockers(SPAWN[0], SPAWN[1], 0.4).hit).toBe(false);
+    const yaw = Math.atan2(16, -16);
+    expect(resolveDriveBlockers(-6, 18, yaw).hit).toBe(false);
+    const rock = getHuangshanProps().boulder[0];
+    const hit = resolveDriveBlockers(rock.x, rock.z, 0);
+    expect(hit.hit).toBe(true);
+    expect(Math.hypot(hit.x - rock.x, hit.z - rock.z)).toBeGreaterThan(0.5);
+  });
+});
+
+describe('开车贴地 carGround', () => {
+  it('平地上几乎不倾斜，高度仍贴着地面', () => {
+    const pose = fitCarToGround(SPAWN[0], SPAWN[1], 0.2, 1, 0.06);
+    expect(Math.abs(pose.pitch)).toBeLessThan(0.08);
+    expect(Math.abs(pose.roll)).toBeLessThan(0.08);
+    expect(pose.y).toBeCloseTo(terrainHeight(SPAWN[0], SPAWN[1]) - 0.06, 1);
+  });
+
+  it('陡坡上车身跟着坡抬，采样点不会埋进山里', () => {
+    let best = null;
+    let bestDrop = 0;
+    for (let x = -72; x <= 72; x += 12) {
+      for (let z = -72; z <= 72; z += 12) {
+        const north = terrainHeight(x, z + 2.2);
+        const south = terrainHeight(x, z - 2.2);
+        const drop = Math.abs(north - south);
+        if (drop > bestDrop) {
+          bestDrop = drop;
+          best = { x, z, yaw: north >= south ? 0 : Math.PI };
+        }
+      }
+    }
+    expect(bestDrop).toBeGreaterThan(0.6);
+    const pose = fitCarToGround(best.x, best.z, best.yaw, 1, 0.06);
+    expect(Math.abs(pose.pitch)).toBeGreaterThan(0.04);
+    expect(carPoseGap(best.x, best.z, best.yaw, pose, 1)).toBeGreaterThan(-0.1);
+  });
+
+  it('格子内部高度落在可见三角面上', () => {
+    const seg = GAME_PERF.terrainSegments;
+    const cell = MAP_SIZE / seg;
+    const g = new THREE.PlaneGeometry(MAP_SIZE, MAP_SIZE, seg, seg);
+    g.rotateX(-Math.PI / 2);
+    const pos = g.attributes.position;
+    const index = g.index.array;
+    for (let i = 0; i < pos.count; i++) pos.setY(i, terrainHeight(pos.getX(i), pos.getZ(i)));
+    const x = -HALF + (40 + 0.37) * cell;
+    const z = -HALF + (20 + 0.22) * cell;
+    let onMesh = null;
+    for (let t = 0; t < index.length; t += 3) {
+      const ia = index[t];
+      const ib = index[t + 1];
+      const ic = index[t + 2];
+      const ax = pos.getX(ia);
+      const az = pos.getZ(ia);
+      const bx = pos.getX(ib);
+      const bz = pos.getZ(ib);
+      const cx = pos.getX(ic);
+      const cz = pos.getZ(ic);
+      const den = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+      const u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / den;
+      const v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / den;
+      const w = 1 - u - v;
+      if (u >= -1e-4 && v >= -1e-4 && w >= -1e-4) {
+        onMesh = u * pos.getY(ia) + v * pos.getY(ib) + w * pos.getY(ic);
+        break;
+      }
+    }
+    expect(onMesh).not.toBeNull();
+    expect(groundMeshHeight(x, z)).toBeCloseTo(onMesh, 4);
+    g.dispose();
   });
 });
 
@@ -652,6 +728,129 @@ describe('背包 stores/combatStore：血药与换武器', () => {
     expect(read('../GameHud.jsx')).toMatch(/Escape/);
     expect(read('../hero/Player.jsx')).toMatch(/world\.paused/);
     expect(read('../monsters/Monsters.jsx')).toMatch(/world\.paused/);
+  });
+});
+
+describe('存档 stores/saveStore', () => {
+  const mem = () => {
+    const box = new Map();
+    return {
+      getItem: (k) => (box.has(k) ? box.get(k) : null),
+      setItem: (k, v) => box.set(k, String(v)),
+    };
+  };
+
+  afterEach(async () => {
+    const { resetGameSession } = await import('../stores/gameSession');
+    resetGameSession();
+  });
+
+  it('保存、覆盖、读取会带回位置、等级、道具、装备和技能', async () => {
+    const { getPlayerState } = await import('../stores/gameSession');
+    const { saveToSlot, loadSlot, readBook } = await import('../stores/saveStore');
+    const { combat } = await import('../stores/combatStore');
+    const { vehicle } = await import('../vehicles/runtime');
+    const storage = mem();
+    const player = getPlayerState(() => ({
+      pos: new THREE.Vector3(12, 3, -8),
+      vel: new THREE.Vector3(),
+      knock: new THREE.Vector3(),
+      yaw: 0.4,
+      camYaw: 1.2,
+      camPitch: 0.3,
+      camDist: 6,
+    }));
+    combat.level = 6;
+    combat.xp = 15;
+    combat.hp = 40;
+    combat.mp = 11;
+    combat.weapon = 'iron';
+    combat.owned = { wood: true, iron: true };
+    combat.pots = { hp: 2, hpMid: 1, hpBig: 0 };
+    combat.quickPot = 'hpMid';
+    combat.skills = ['attack', 'whirl'];
+    vehicle.inCar = false;
+    expect(saveToSlot(1, storage).ok).toBe(true);
+    expect(readBook(storage).slots[1].level).toBe(6);
+    expect(readBook(storage).slots[1].x).toBeCloseTo(12);
+    combat.level = 9;
+    player.pos.set(20, 2, -3);
+    expect(saveToSlot(1, storage).overwrite).toBe(true);
+    expect(readBook(storage).slots[1].level).toBe(9);
+    combat.level = 1;
+    combat.weapon = 'wood';
+    combat.skills = ['attack'];
+    player.pos.set(0, 0, 0);
+    expect(loadSlot(1, storage).ok).toBe(true);
+    expect(combat.level).toBe(9);
+    expect(combat.xp).toBe(15);
+    expect(combat.weapon).toBe('iron');
+    expect(combat.pots.hpMid).toBe(1);
+    expect(combat.quickPot).toBe('hpMid');
+    expect(combat.skills).toEqual(['attack', 'whirl']);
+    expect(player.pos.x).toBeCloseTo(20);
+    expect(player.pos.z).toBeCloseTo(-3);
+    expect(player.yaw).toBeCloseTo(0.4);
+    expect(loadSlot(0, storage).ok).toBe(false);
+  });
+
+  it('模块里的人物记录被清掉后，仍保存画面上这个人', async () => {
+    const { resetGameSession } = await import('../stores/gameSession');
+    const { saveToSlot } = await import('../stores/saveStore');
+    const { world } = await import('../stores/combatStore');
+    resetGameSession();
+    world.player = {
+      pos: new THREE.Vector3(8, 2, -5),
+      vel: new THREE.Vector3(),
+      knock: new THREE.Vector3(),
+      yaw: 0.2,
+      camYaw: 0.2,
+      camPitch: 0.3,
+      camDist: 5.2,
+    };
+    const storage = mem();
+    const res = saveToSlot(0, storage);
+    expect(res.ok).toBe(true);
+    expect(res.slot.x).toBeCloseTo(8);
+    expect(res.slot.z).toBeCloseTo(-5);
+    world.player = null;
+  });
+
+  it('坏掉的本地存档当成空档', async () => {
+    const { readBook } = await import('../stores/saveStore');
+    const storage = { getItem: () => '{', setItem() {} };
+    expect(readBook(storage).slots.every((s) => s == null)).toBe(true);
+  });
+
+  it('一共一百格，旧的四格仍留在前面，最后一格也能存', async () => {
+    const { SAVE_SLOTS, SAVE_PAGES, SAVE_PAGE_SIZE, readBook, saveToSlot } = await import('../stores/saveStore');
+    const { getPlayerState } = await import('../stores/gameSession');
+    expect(SAVE_PAGES).toBe(10);
+    expect(SAVE_PAGE_SIZE).toBe(10);
+    expect(SAVE_SLOTS).toBe(100);
+    const old = {
+      version: 1,
+      slots: [null, { level: 4, x: 6, z: -2, savedAt: 1 }, null, null],
+    };
+    const storage = { getItem: () => JSON.stringify(old), setItem() {} };
+    const book = readBook(storage);
+    expect(book.slots).toHaveLength(100);
+    expect(book.slots[1].level).toBe(4);
+    expect(book.slots[1].x).toBeCloseTo(6);
+    expect(book.slots[4]).toBeNull();
+    getPlayerState(() => ({
+      pos: new THREE.Vector3(3, 1, 9),
+      vel: new THREE.Vector3(),
+      knock: new THREE.Vector3(),
+      yaw: 0,
+      camYaw: 0,
+      camPitch: 0.3,
+      camDist: 5.2,
+    }));
+    const writable = mem();
+    expect(saveToSlot(99, writable).ok).toBe(true);
+    expect(readBook(writable).slots[99].x).toBeCloseTo(3);
+    expect(saveToSlot(100, writable).ok).toBe(false);
   });
 });
 

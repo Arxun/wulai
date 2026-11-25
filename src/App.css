@@ -1123,6 +1123,47 @@ html.gpu-accel .wulai-bits {
   font-weight: 600;
 }
 
+.sysmenu-save__pages {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.sysmenu-save__pages button {
+  min-width: 28px;
+  min-height: 30px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 232, 168, 0.35);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.82);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sysmenu-save__pages button.on {
+  border-color: #ffd166;
+  background: rgba(255, 209, 102, 0.16);
+  color: #fff;
+}
+
+.sysmenu-save__pages button:disabled {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.32);
+  cursor: default;
+}
+
+.sysmenu-save__meta {
+  font-size: 12px;
+  color: rgba(255, 232, 168, 0.72);
+  white-space: nowrap;
+}
+
 .sysmenu-skill__key {
   display: inline-flex;
   align-items: center;
@@ -1379,6 +1420,7 @@ html.gpu-accel .wulai-bits {
   .sysmenu__close:hover,
   .sysmenu-cell:not(.empty):hover,
   .sysmenu-skill:hover,
+  .sysmenu-save__pages button:not(:disabled):not(.on):hover,
   .sysmenu__actions button:not(:disabled):hover {
     background: rgba(255, 255, 255, 0.1);
   }

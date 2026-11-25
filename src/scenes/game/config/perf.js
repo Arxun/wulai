@@ -51,6 +51,11 @@ export function isGamePerfMobile() {
   return mobileGameActive;
 }
 
+/** 地面网格分段。每帧查高度走这个，避免移动端把整份配置展开成新对象 */
+export function terrainSegmentCount() {
+  return mobileGameActive ? MOBILE_OVERRIDES.terrainSegments : GAME_PERF.terrainSegments;
+}
+
 /** @returns {typeof GAME_PERF} */
 export function getGamePerf() {
   if (!mobileGameActive) return GAME_PERF;

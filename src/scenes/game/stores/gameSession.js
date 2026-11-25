@@ -17,12 +17,21 @@ export function getPlayerState(create) {
   return playerState;
 }
 
+/** 存档读取人物位置。还没进过场景时是 null */
+export function peekPlayerState() {
+  return playerState;
+}
+
 export function resetGameSession() {
   playerState = null;
   resetDrift();
   resetCombat();
   vehicle.inCar = false;
   vehicle.near = false;
+  vehicle.carPitch = NaN;
+  vehicle.carRoll = NaN;
+  vehicle.carGroundY = NaN;
+  vehicle.fitStable = false;
 }
 
 resetGameSession();

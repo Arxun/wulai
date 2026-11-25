@@ -39,7 +39,9 @@ three.js 的可见点光数量一变，所有受光材质都会重新编译着�
 
 - 大量同类实体共用一个 `useFrame` 统一驱动（参照 `Monsters.jsx`），不要每个实体各开一个。
 - `useFrame` 里不要分配对象，复用模块级的 `Vector3`、`Matrix4`、`Quaternion`。
+- 每帧查地面网格高度用 `terrainSegmentCount()`，不要调用 `getGamePerf()`：移动端那份配置每次都会展开成新对象。
 - 不要在 render 里或 `useFrame` 里 setState。跨组件上报进度一类的需求，用 store 的 `subscribe` 加 rAF（参照 `GameLoadReporter.jsx`），不要在 render 里调用会更新其他组件的 hook。
+- 开车防穿模（贴坡、挡树）的做法和耗时预算见同目录的 `wulai-drive-clip`。不要为了防穿模去加碰撞网格、提地形分段或每帧重算停着的车。
 
 ## 5. 模型资源
 

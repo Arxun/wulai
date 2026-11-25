@@ -1,4 +1,5 @@
 import { SPAWN, terrainHeight } from './heightfield';
+import { blockersNear } from './props';
 
 /** 与 GameScene / Su7CarPlacement 共用同一组摆放参数 */
 export const SU7_SPAWN = {
@@ -24,7 +25,7 @@ function su7ObstacleAt(x, z, rotY) {
   };
 }
 
-function resolveCircleOBB(px, pz, ob) {
+function resolveCircleOBB(px, pz, ob, radius = PLAYER_COLLIDE_R) {
   const cos = Math.cos(ob.rotY);
   const sin = Math.sin(ob.rotY);
   const dx = px - ob.x;
@@ -38,7 +39,7 @@ function resolveCircleOBB(px, pz, ob) {
   let qx = lx - cx;
   let qz = lz - cz;
   let distSq = qx * qx + qz * qz;
-  const r = PLAYER_COLLIDE_R;
+  const r = radius;
 
   if (distSq > r * r - 1e-8) {
     return { x: px, z: pz, nx: 0, nz: 0, hit: false };
@@ -104,6 +105,42 @@ export function resolvePlayerObstacles(px, pz, opts = {}) {
         hit = true;
         moved = true;
       }
+    }
+    if (!moved) break;
+  }
+  return { x, z, nx, nz, hit };
+}
+
+/**
+ * 开车时把车从树和石头里推出来。只在车上用，走路仍可穿过林子。
+ * 圆被车身顶开多少，车就往反方向让多少。
+ */
+export function resolveDriveBlockers(px, pz, yaw) {
+  const halfW = SU7_SPAWN.halfWidth * (SU7_SPAWN.scale || 1);
+  const halfL = SU7_SPAWN.halfLength * (SU7_SPAWN.scale || 1);
+  const ob = { x: px, z: pz, rotY: yaw, halfW, halfL };
+  let x = px;
+  let z = pz;
+  let nx = 0;
+  let nz = 0;
+  let hit = false;
+  for (let iter = 0; iter < 3; iter++) {
+    ob.x = x;
+    ob.z = z;
+    const near = blockersNear(x, z);
+    let moved = false;
+    for (let i = 0; i < near.length; i++) {
+      const b = near[i];
+      const r = resolveCircleOBB(b.x, b.z, ob, b.r);
+      if (!r.hit) continue;
+      x -= r.x - b.x;
+      z -= r.z - b.z;
+      nx = -r.nx;
+      nz = -r.nz;
+      hit = true;
+      moved = true;
+      ob.x = x;
+      ob.z = z;
     }
     if (!moved) break;
   }

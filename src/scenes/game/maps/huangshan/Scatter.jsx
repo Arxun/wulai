@@ -3,9 +3,8 @@ import * as THREE from 'three';
 import FacetMesh from '../../../../lib/components/FacetMesh';
 import { makeGrassGeometry, makeRockGeometry } from '../../../../lib/geometry/organic';
 import { makeBroadleafGeometry, makeConiferGeometry, makeHuangshanPine } from '../../../../lib/geometry/trees';
-import { mulberry32 } from '../../../../lib/math/random';
 import { getGamePerf } from '../../config/perf';
-import { HALF, SPAWN, nearestPath, slopeAt, spawnPadFactor, terrainHeight } from './heightfield';
+import { getHuangshanProps, scatterPoints } from './props';
 
 /**
  * 地图上的植被和石头。
@@ -16,31 +15,6 @@ import { HALF, SPAWN, nearestPath, slopeAt, spawnPadFactor, terrainHeight } from
  * 散布规则：离山路太近的不长（否则路被堵住）、太陡的坡不长树、
  * 高海拔只长针叶树、谷底才有阔叶树。
  */
-
-/**
- * 在地图上撒点。
- * @param {object} o
- * @param {number} o.count 目标数量
- * @param {[number,number]} [o.height] 允许的海拔区间
- * @param {number} [o.maxSlope] 允许的最大坡度
- * @param {number} [o.minPath] 离山路的最小距离
- */
-function scatter({ count, seed, height = [-99, 99], maxSlope = 0.5, minPath = 4, edge = 6 }) {
-  const rnd = mulberry32(seed);
-  const out = [];
-  const limit = HALF - edge;
-  for (let tries = 0; tries < count * 60 && out.length < count; tries++) {
-    const x = (rnd() * 2 - 1) * limit;
-    const z = (rnd() * 2 - 1) * limit;
-    const y = terrainHeight(x, z);
-    if (y < height[0] || y > height[1]) continue;
-    if (slopeAt(x, z) > maxSlope) continue;
-    if (nearestPath(x, z).dist < minPath) continue;
-    if (Math.hypot(x - SPAWN[0], z - SPAWN[1]) < 7 || spawnPadFactor(x, z) > 0.15) continue;
-    out.push({ x, y, z, rot: rnd() * Math.PI * 2, s: 0.75 + rnd() * 0.55, v: Math.floor(rnd() * 3) });
-  }
-  return out;
-}
 
 /**
  * 一组共用几何体的物件。每种变体一个 InstancedMesh：
@@ -137,20 +111,11 @@ export default function Scatter() {
     [],
   );
 
-  const items = useMemo(
-    () => ({
-      conifer: scatter({ count: 170, seed: 101, height: [4, 38], maxSlope: 0.52, minPath: 5 }),
-      pine: scatter({ count: 58, seed: 102, height: [-6, 28], maxSlope: 0.42, minPath: 3.2 }),
-      broadleaf: scatter({ count: 68, seed: 103, height: [-16, 10], maxSlope: 0.34, minPath: 4.5 }),
-      rock: scatter({ count: 130, seed: 104, maxSlope: 0.85, minPath: 2.6 }),
-      boulder: scatter({ count: 36, seed: 105, maxSlope: 0.7, minPath: 4 }),
-    }),
-    [],
-  );
+  const items = useMemo(() => getHuangshanProps(), []);
 
   // 草丛：贴着地面，一簇簇长在缓坡上
   const grass = useMemo(() => {
-    const pts = scatter({
+    const pts = scatterPoints({
       count: getGamePerf().grassClusterCount,
       seed: 106,
       maxSlope: 0.4,

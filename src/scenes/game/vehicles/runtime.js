@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ZERO_POSE } from '../../../lib/animation/gait';
 import { HALF, terrainHeight } from '../maps/huangshan/heightfield';
+import { fitCarToGround } from './carGround';
 import { combat } from '../stores/combatStore';
 import { resolvePlayerObstacles } from '../maps/huangshan/obstacles';
 import { SU7_DRIVER_LOCAL } from './su7/driverSeat';
@@ -40,6 +41,10 @@ export const vehicle = {
   carX: spawn.x,
   carZ: spawn.z,
   carYaw: spawn.rotationY,
+  /** 贴地后的俯仰、侧倾、车根高度。NaN 表示还没算过，下一帧直接贴上 */
+  carPitch: NaN,
+  carRoll: NaN,
+  carGroundY: NaN,
   sink: spawn.sink,
   scale: spawn.scale,
   driveSpeed: 0,
@@ -63,6 +68,48 @@ export function syncCarFromPlayer(playerState) {
   vehicle.carZ = playerState.pos.z;
   vehicle.carYaw = playerState.yaw;
   vehicle.driveSpeed = Math.hypot(playerState.vel.x, playerState.vel.z);
+}
+
+/** 每帧把车姿收到坡面上。停着的车贴稳之后就不再重算 */
+export function applyCarGroundFit(dt) {
+  if (!vehicle.inCar && vehicle.fitStable
+    && vehicle.fitX === vehicle.carX && vehicle.fitZ === vehicle.carZ && vehicle.fitYaw === vehicle.carYaw) {
+    return;
+  }
+  const scale = vehicle.scale || 1;
+  const sink = vehicle.sink || 0;
+  const slope = measureThenFit(vehicle.carX, vehicle.carZ, vehicle.carYaw, scale, sink, dt);
+  vehicle.carPitch = slope.pitch;
+  vehicle.carRoll = slope.roll;
+  vehicle.carGroundY = slope.y;
+  vehicle.fitX = vehicle.carX;
+  vehicle.fitZ = vehicle.carZ;
+  vehicle.fitYaw = vehicle.carYaw;
+  vehicle.fitStable = !vehicle.inCar
+    && Math.abs(slope.pitch - slope.targetPitch) < 0.004
+    && Math.abs(slope.roll - slope.targetRoll) < 0.004;
+}
+
+function measureThenFit(x, z, yaw, scale, sink, dt) {
+  const target = fitCarToGround(x, z, yaw, scale, sink);
+  if (!Number.isFinite(vehicle.carPitch) || !Number.isFinite(dt)) {
+    return { ...target, targetPitch: target.pitch, targetRoll: target.roll };
+  }
+  const rise = 1 - Math.exp(-18 * dt);
+  const settle = 1 - Math.exp(-10 * dt);
+  let pitch = vehicle.carPitch + (target.pitch - vehicle.carPitch) * rise;
+  let roll = vehicle.carRoll + (target.roll - vehicle.carRoll) * settle;
+  let y = target.y;
+  if (Math.abs(pitch - target.pitch) > 0.012 || Math.abs(roll - target.roll) > 0.012) {
+    y = fitCarToGround(x, z, yaw, scale, sink, { pitch, roll }).y;
+  } else {
+    pitch = target.pitch;
+    roll = target.roll;
+  }
+  if (Number.isFinite(vehicle.carGroundY) && y < vehicle.carGroundY) {
+    y = vehicle.carGroundY + (y - vehicle.carGroundY) * settle;
+  }
+  return { pitch, roll, y, targetPitch: target.pitch, targetRoll: target.roll };
 }
 
 export function carLocalToWorld(lx, ly, lz, out = _tmp) {

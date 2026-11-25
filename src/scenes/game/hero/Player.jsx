@@ -19,7 +19,7 @@ import Person from '../../lowpoly/person/index';
 import { LOCO_RIG } from '../../lowpoly/person/rigs';
 import { ULT_SKILL_NAME } from '../../../config/lore';
 import { BORDER_OUT, HALF, SPAWN, terrainHeight, terrainNormal } from '../maps/huangshan/heightfield';
-import { resolvePlayerObstacles } from '../maps/huangshan/obstacles';
+import { resolveDriveBlockers, resolvePlayerObstacles } from '../maps/huangshan/obstacles';
 import { getMonsterPack } from '../monsters/pack';
 import { pickMonsterOnRay } from '../monsters/pick';
 import NitroFlame from '../NitroFlame';
@@ -66,7 +66,9 @@ import {
 } from '../stores/combatStore';
 import { guardFrame } from '../debug/reportError';
 import { getPlayerState } from '../stores/gameSession';
+import { surfaceHeight } from '../vehicles/carGround';
 import {
+  applyCarGroundFit,
   CAR_SIT_POSE,
   START_IN_SU7,
   activeVehicleSpeedMult,
@@ -285,6 +287,8 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     }
     return init;
   });
+  // 菜单打开时帧循环是停的，存档要读到正在画面上的这份，不能另找一份可能被清掉的记录
+  world.player = s;
 
   // Canvas remount 时沿用会话里的状态；只清掉跟旧画布绑定的拖拽手势
   useEffect(() => {
@@ -629,10 +633,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     }
 
     const ground = terrainHeight(s.pos.x, s.pos.z);
-    if (inCar) {
-      s.pos.y = ground;
-      syncCarFromPlayer(s);
-    } else if (s.air) {
+    if (!inCar && s.air) {
       s.vy -= JUMP_GRAVITY * dt;
       s.pos.y += s.vy * dt;
       if (s.pos.y <= ground && s.vy <= 0) {
@@ -654,6 +655,29 @@ export default function Player({ lightRef, skidRef, lineRef }) {
       s.yaw = approachAngle(s.yaw, Math.atan2(tmp.want.x, tmp.want.z), 1 - Math.exp(-11 * dt));
     }
     s.slip = speed > 0.3 ? wrapAngle(velYaw - s.yaw) : 0;
+
+    if (inCar) {
+      const blk = resolveDriveBlockers(s.pos.x, s.pos.z, s.yaw);
+      if (blk.hit) {
+        s.pos.x = blk.x;
+        s.pos.z = blk.z;
+        const into = s.vel.x * blk.nx + s.vel.z * blk.nz;
+        if (into < 0) {
+          s.vel.x -= into * blk.nx;
+          s.vel.z -= into * blk.nz;
+        }
+        const kIn = s.knock.x * blk.nx + s.knock.z * blk.nz;
+        if (kIn < 0) {
+          s.knock.x -= kIn * blk.nx;
+          s.knock.z -= kIn * blk.nz;
+        }
+      }
+      syncCarFromPlayer(s);
+      applyCarGroundFit(dt);
+      s.pos.y = vehicle.carGroundY + vehicle.sink;
+    } else {
+      applyCarGroundFit(dt);
+    }
 
     const turnRate = wrapAngle(s.yaw - prevYaw) / Math.max(dt, 1e-3);
     // 漂移时身体往内侧倾，普通转弯只是轻微侧倾
@@ -684,7 +708,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
         s.skid -= step;
         for (const side of [-trackHalf, trackHalf]) {
           tmp.mark.set(s.pos.x + rx * side, 0, s.pos.z + rz * side);
-          tmp.mark.y = terrainHeight(tmp.mark.x, tmp.mark.z) + 0.035;
+          tmp.mark.y = surfaceHeight(tmp.mark.x, tmp.mark.z) + 0.035;
           tmp.normal.copy(terrainNormal(tmp.mark.x, tmp.mark.z, 0.7));
           skidRef?.current?.emit(tmp.mark, velYaw, tmp.normal, strength, { tire: inCar });
         }
@@ -851,7 +875,7 @@ export default function Player({ lightRef, skidRef, lineRef }) {
     const camLimit = HALF + BORDER_OUT - 16;
     tmp.camPos.x = clamp(tmp.camPos.x, -camLimit, camLimit);
     tmp.camPos.z = clamp(tmp.camPos.z, -camLimit, camLimit);
-    tmp.camPos.y = Math.max(tmp.camPos.y, terrainHeight(tmp.camPos.x, tmp.camPos.z) + 0.8);
+    tmp.camPos.y = Math.max(tmp.camPos.y, surfaceHeight(tmp.camPos.x, tmp.camPos.z) + 0.8);
     if (fx.shake > 0) {
       const t = state.clock.elapsedTime;
       const amp = fx.shake * 0.45;

@@ -90,6 +90,8 @@ export const combat = {
   wulaiCd: 0,
   /** 回旋斩剩余冷却（秒） */
   whirlCd: 0,
+  /** 已学会的技能 id。现在开局四种都会，存档会把这份记下来 */
+  skills: ['attack', 'skill', 'whirl', 'wulai'],
 };
 
 /** 地上的掉落物。Loot.jsx 每帧读这份。 */
@@ -128,6 +130,7 @@ export function resetCombat() {
   combat.deathAge = 0;
   combat.wulaiCd = 0;
   combat.whirlCd = 0;
+  combat.skills = ['attack', 'skill', 'whirl', 'wulai'];
   resetMoves(world);
   world.striking = false;
   world.paused = false;
